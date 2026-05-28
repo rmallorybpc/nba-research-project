@@ -3,6 +3,7 @@
 ## Documentation
 
 - NBA awards supermax reference: [dashboard/docs/nba-awards-reference.md](dashboard/docs/nba-awards-reference.md)
+- NBA CBA thresholds classification reference: [docs/docs-file.md](docs/docs-file.md)
 
 ## Data Validation
 
