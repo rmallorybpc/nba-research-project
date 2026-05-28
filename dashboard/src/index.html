@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NBA Analysis | Overview</title>
+    <link rel="stylesheet" href="assets/tmg-styles.css" />
+    <script defer src="assets/nav.js"></script>
+  </head>
+  <body>
+    <div id="tmg-nav-host"></div>
+    <main>
+      <h1>Overview</h1>
+      <section class="card">
+        <p>Site overview and executive summary placeholder.</p>
+        <p>Status: <span class="placeholder" id="status">Loading...</span></p>
+      </section>
+      <p class="links">
+        <a href="welcome.html">Welcome</a>
+        <a href="findings.html">Key Findings</a>
+        <a href="index.html">Overview</a>
+        <a href="team.html">Team</a>
+        <a href="explorer.html">Explorer</a>
+        <a href="sandbox.html">Sandbox</a>
+      </p>
+    </main>
+    <script>
+      const BASE = "/nba-research-project";
+      async function loadStatus() {
+        const target = document.getElementById("status");
+        try {
+          const response = await fetch(`${BASE}/assets/data/overview.csv`);
+          if (response.ok) {
+            const text = await response.text();
+            if (text.trim()) {
+              target.textContent = "Loaded";
+            }
+          }
+        } catch (_err) {
+          // Keep placeholder text while data files are still empty/missing.
+        }
+      }
+      loadStatus();
+    </script>
+  </body>
+</html>

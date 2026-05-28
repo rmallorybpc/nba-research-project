@@ -1,0 +1,103 @@
+:root {
+  --cream: #f7f2e7;
+  --charcoal: #202124;
+  --sage: #6d8b74;
+  --sage-dark: #4f6554;
+  --panel: #fffdf7;
+  --border: #d5cdbb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, var(--cream) 0%, #f2ecdf 100%);
+  color: var(--charcoal);
+}
+
+.tmg-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  background: #f9f4e9;
+}
+
+.brand {
+  color: var(--charcoal);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropbtn {
+  border: 1px solid var(--border);
+  background: var(--sage);
+  color: #fff;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  min-width: 220px;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--panel);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-content a {
+  display: block;
+  padding: 0.6rem 0.8rem;
+  color: var(--charcoal);
+  text-decoration: none;
+}
+
+.dropdown-content a:hover {
+  background: #ece4d2;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+main {
+  max-width: 980px;
+  margin: 1.2rem auto;
+  padding: 0 1rem 2rem;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 1rem;
+}
+
+.placeholder {
+  color: var(--sage-dark);
+  font-weight: 600;
+}
+
+.links a {
+  color: var(--sage-dark);
+  margin-right: 0.8rem;
+}
+
+footer {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: #4a4a4a;
+}
