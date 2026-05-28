@@ -1,0 +1,24 @@
+name: Validate NBA Awards CSV
+
+on:
+  pull_request:
+    paths:
+      - "nba_awards.csv"
+      - "scripts/validate_nba_awards.sh"
+      - ".github/workflows/validate-awards.yml"
+  push:
+    branches: [main]
+    paths:
+      - "nba_awards.csv"
+      - "scripts/validate_nba_awards.sh"
+      - ".github/workflows/validate-awards.yml"
+
+jobs:
+  validate-awards:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run awards completeness checks
+        run: bash scripts/validate_nba_awards.sh nba_awards.csv
