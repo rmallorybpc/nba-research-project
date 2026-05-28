@@ -1,0 +1,9 @@
+event_id,player_name,season,contract_start_season,signing_team,prior_team,incumbent,years_of_service,yos_band,average_annual_value,cap_percentage_at_signing,using_aav_proxy,minimum_salary,supermax_eligible,eligibility_uncertain,contract_type,treatment_category,classification_flag
+1,Alpha Eligible,2023-24,2023-24,AAA,AAA,TRUE,8,7-9,35,0.35,TRUE,5.5,TRUE,FALSE,supermax,re_signed_supermax,
+2,Bravo Veteran,2023-24,2023-24,BBB,BBB,TRUE,10,10+,35,0.35,TRUE,6.5,FALSE,FALSE,max_35,re_signed_standard,
+3,Charlie Rose,2023-24,2023-24,CCC,CCC,TRUE,5,0-6,30,0.3,TRUE,4,TRUE,FALSE,max_30,re_signed_standard,rose_rule
+4,Delta Rookie,2023-24,2023-24,DDD,OLD,FALSE,4,0-6,25,0.25,TRUE,3.5,FALSE,FALSE,max_25,new_team,
+5,Echo Minimum,2023-24,2023-24,EEE,OLD,FALSE,2,0-6,2.01,0.0201,TRUE,2,FALSE,FALSE,minimum,new_team,
+6,Foxtrot BAE,2023-24,2023-24,FFF,OLD,FALSE,3,0-6,4.05,0.0405,TRUE,3,FALSE,FALSE,bae,new_team,
+7,Golf MLE,2023-24,2023-24,GGG,OLD,FALSE,5,0-6,12.2,0.122,TRUE,4,FALSE,FALSE,mle,new_team,
+8,Hotel Review,2023-24,2023-24,HHH,HHH,TRUE,8,7-9,35,0.35,TRUE,5.5,FALSE,FALSE,standard_or_exception,re_signed_standard,supermax_review_105pct

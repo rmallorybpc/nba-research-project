@@ -8,26 +8,28 @@
 #           award history against the qualifying-window rules — dollar value
 #           alone is not sufficient.
 #
-# Inputs  : data/processed/signing_events.csv   (one row per player-team-contract)
-#           data/processed/cba_thresholds.csv   (salary cap + max tiers by season)
-#           data/processed/nba_awards.csv       (MVP / DPOY / All-NBA by season)
+# Inputs  : data/processed/signing_events.csv      (one row per player-team-contract)
+#           data/processed/cba_thresholds.csv      (cap + max tiers + MLE/BAE by season)
+#           data/processed/nba_awards.csv          (MVP / DPOY / All-NBA by season)
+#           data/processed/nba_minimum_scale.csv   (minimum salary by season + YOS)
 #
 # Output  : data/processed/signing_events_classified.csv
 #
 # Depends : dplyr, tidyr, readr, stringr, stringi, purrr
 #
-# Notes   : Two inputs are not yet complete and the script is written to fail
-#           loudly or flag rather than guess:
-#             (1) signing_events must carry `years_of_service`. Age is NOT a
-#                 substitute — the tier (25/30/35) and the 7-9 supermax band are
-#                 defined on YOS.
-#             (2) MLE / BAE / minimum per-season dollar values are not yet in
-#                 cba_thresholds.csv. Until they are, sub-max contracts are
-#                 classified as "standard_or_exception" with a flag, not split.
-#           Award data has documented gaps (see nba-awards.md). Any signing whose
-#           lookback window touches an incomplete award season is flagged
-#           `eligibility_uncertain = TRUE` so a data gap never produces a false
-#           "not a supermax".
+# Notes   : One input remains to be built before this runs end to end:
+#             signing_events must carry `years_of_service`. Age is NOT a
+#             substitute — the tier (25/30/35) and the 7-9 supermax band are
+#             defined on YOS, and the minimum branch joins the YOS-specific
+#             minimum scale.
+#           The thresholds file carries the max tiers plus MLE (non-taxpayer,
+#           taxpayer, room) and BAE per season; the minimum scale is a separate
+#           (season, YOS) lookup. All sub-max branches are therefore active.
+#           Award data is complete for 2013-14 through 2024-25 (all three All-NBA
+#           teams plus MVP and DPOY per season). The `eligibility_uncertain` flag
+#           remains in the output as defensive infrastructure but will be FALSE
+#           for all rows unless the signing window is extended beyond the awards
+#           coverage.
 # ==============================================================================
 
 suppressPackageStartupMessages({
@@ -47,6 +49,7 @@ paths <- list(
   events     = "data/processed/signing_events.csv",
   thresholds = "data/processed/cba_thresholds.csv",
   awards     = "data/processed/nba_awards.csv",
+  min_scale  = "data/processed/nba_minimum_scale.csv",
   out        = "data/processed/signing_events_classified.csv"
 )
 
@@ -55,10 +58,13 @@ paths <- list(
 # fraction below a tier threshold still counts as that tier.
 TIER_TOLERANCE <- 0.02
 
-# Award seasons known to be incomplete in nba_awards.csv (see nba-awards.md).
-# A signing whose lookback window includes any of these cannot have its supermax
-# eligibility fully trusted from the awards table alone.
-INCOMPLETE_AWARD_SEASONS <- c("2013-14", "2014-15", "2015-16", "2019-20", "2020-21")
+# Award seasons known to be incomplete in nba_awards.csv. As of the awards table
+# being completed for 2013-14 through 2024-25, this is empty — every season has
+# all three All-NBA teams plus MVP and DPOY. The mechanism is retained so that if
+# the signing window is ever extended to seasons the awards table does not yet
+# cover, those seasons can be listed here and affected signings flagged rather
+# than silently mis-coded.
+INCOMPLETE_AWARD_SEASONS <- character(0)
 
 # ------------------------------------------------------------------------------
 # Helpers: season arithmetic
@@ -104,13 +110,14 @@ normalize_player_name <- function(x) {
 # ------------------------------------------------------------------------------
 
 load_inputs <- function(paths) {
-  walk(paths[c("events", "thresholds", "awards")], function(p) {
+  walk(paths[c("events", "thresholds", "awards", "min_scale")], function(p) {
     if (!file.exists(p)) stop("Required input not found: ", p, call. = FALSE)
   })
 
   events     <- read_csv(paths$events, show_col_types = FALSE)
   thresholds <- read_csv(paths$thresholds, show_col_types = FALSE)
   awards     <- read_csv(paths$awards, show_col_types = FALSE)
+  min_scale  <- read_csv(paths$min_scale, show_col_types = FALSE)
 
   # Required fields on the signing-event table. years_of_service is mandatory.
   required_event_cols <- c(
@@ -127,22 +134,23 @@ load_inputs <- function(paths) {
   }
 
   required_threshold_cols <- c("season", "salary_cap",
-                               "max_25pct", "max_30pct", "max_35pct")
+                               "max_25pct", "max_30pct", "max_35pct",
+                               "mle_nontaxpayer", "mle_taxpayer", "mle_room", "bae")
   missing_t <- setdiff(required_threshold_cols, names(thresholds))
   if (length(missing_t) > 0) {
     stop("cba_thresholds is missing required columns: ",
          paste(missing_t, collapse = ", "), call. = FALSE)
   }
 
-  # MLE / BAE / minimum columns are optional for now. Warn if absent.
-  exception_cols <- c("mle_nontaxpayer", "bae", "veteran_minimum")
-  if (!all(exception_cols %in% names(thresholds))) {
-    message("NOTE: MLE/BAE/minimum columns absent from thresholds. ",
-            "Sub-max contracts will be labelled 'standard_or_exception' ",
-            "and not split until those per-season values are added.")
+  required_min_cols <- c("season", "years_of_service", "minimum_salary")
+  missing_m <- setdiff(required_min_cols, names(min_scale))
+  if (length(missing_m) > 0) {
+    stop("nba_minimum_scale is missing required columns: ",
+         paste(missing_m, collapse = ", "), call. = FALSE)
   }
 
-  list(events = events, thresholds = thresholds, awards = awards)
+  list(events = events, thresholds = thresholds,
+       awards = awards, min_scale = min_scale)
 }
 
 # ------------------------------------------------------------------------------
@@ -217,10 +225,15 @@ compute_eligibility <- function(events, awards) {
 # Contract-type waterfall + treatment category
 # ------------------------------------------------------------------------------
 
-classify <- function(events, thresholds) {
+classify <- function(events, thresholds, min_scale) {
 
-  has_exceptions <- all(c("mle_nontaxpayer", "bae", "veteran_minimum")
-                        %in% names(thresholds))
+  # Per-player minimum salary is YOS-specific (a rookie minimum is ~a third of a
+  # 10+ year veteran minimum), so a single per-season threshold would mis-classify.
+  # Join the minimum scale on (season, capped YOS). YOS is capped at 10 because the
+  # scale's "10" row is the 10+ ceiling tier.
+  min_lookup <- min_scale %>%
+    select(season, years_of_service, minimum_salary) %>%
+    rename(min_yos = years_of_service)
 
   df <- events %>%
     left_join(thresholds, by = "season") %>%
@@ -243,20 +256,24 @@ classify <- function(events, thresholds) {
         years_of_service >= 0 &
           years_of_service <= 6           ~ "0-6",
         TRUE                              ~ NA_character_
-      )
-    )
+      ),
 
-  # Materialize exception thresholds as columns so the waterfall always has them.
-  # When the source columns are absent, set to -Inf so no contract matches that
-  # branch (and the contract falls through to "standard_or_exception").
-  df <- df %>%
+      # Cap YOS at 10 to match the scale's 10+ ceiling row for the join.
+      min_yos = pmin(years_of_service, 10L)
+    ) %>%
+    left_join(min_lookup, by = c("season", "min_yos")) %>%
     mutate(
-      thr_min = if (has_exceptions) .data$veteran_minimum else -Inf,
-      thr_bae = if (has_exceptions) .data$bae             else -Inf,
-      thr_mle = if (has_exceptions) .data$mle_nontaxpayer else -Inf
+      # The player's own minimum for this season/YOS. If the join missed (e.g. a
+      # season outside the scale), fall back to -Inf so the minimum branch can't
+      # fire on bad data rather than mis-firing on a wrong number.
+      thr_min = coalesce(minimum_salary, -Inf),
+      # MLE/BAE thresholds (now always present in the thresholds file).
+      thr_bae = bae,
+      thr_mle = mle_nontaxpayer
     )
 
-  # Contract type waterfall. Order matters; first match wins.
+  # Contract type waterfall. Order matters; first match wins. Tolerance band on the
+  # minimum/BAE/MLE comparisons absorbs the small AAV-vs-first-year gap.
   df <- df %>%
     mutate(
       contract_type = case_when(
@@ -272,12 +289,13 @@ classify <- function(events, thresholds) {
         # 4. 25% max: 0-6 YOS at 25%.
         yos_band == "0-6" & at_25
           ~ "max_25",
-        # 5-7. MLE / BAE / minimum (thr_* are -Inf when not yet loaded, so these
-        #      branches never fire until the per-season values are added).
-        salary_basis <= thr_min ~ "minimum",
-        salary_basis <= thr_bae ~ "bae",
-        salary_basis <= thr_mle ~ "mle",
-        # 8. Everything else.
+        # 5. Minimum: at or below the player's own YOS-specific minimum.
+        salary_basis <= thr_min * (1 + TIER_TOLERANCE) ~ "minimum",
+        # 6. Bi-annual exception.
+        salary_basis <= thr_bae * (1 + TIER_TOLERANCE) ~ "bae",
+        # 7. Mid-level exception (non-taxpayer ceiling — the widest MLE band).
+        salary_basis <= thr_mle * (1 + TIER_TOLERANCE) ~ "mle",
+        # 8. Everything else: a negotiated, non-max, above-exception deal.
         TRUE ~ "standard_or_exception"
       ),
 
@@ -352,13 +370,14 @@ qa_report <- function(df) {
 main <- function(paths) {
   inp <- load_inputs(paths)
   events_elig <- compute_eligibility(inp$events, inp$awards)
-  classified  <- classify(events_elig, inp$thresholds)
+  classified  <- classify(events_elig, inp$thresholds, inp$min_scale)
   qa_report(classified)
 
   out_cols <- c(
     "event_id", "player_name", "season", "contract_start_season",
     "signing_team", "prior_team", "incumbent", "years_of_service", "yos_band",
     "average_annual_value", "cap_percentage_at_signing", "using_aav_proxy",
+    "minimum_salary",
     "supermax_eligible", "eligibility_uncertain",
     "contract_type", "treatment_category", "classification_flag"
   )

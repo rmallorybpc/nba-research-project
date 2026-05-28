@@ -1,0 +1,9 @@
+event_id,player_name,season,signing_team,prior_team,contract_start_season,years_of_service,average_annual_value,cap_percentage_at_signing
+1,Alpha Eligible,2023-24,AAA,AAA,2023-24,8,35,0.35
+2,Bravo Veteran,2023-24,BBB,BBB,2023-24,10,35,0.35
+3,Charlie Rose,2023-24,CCC,CCC,2023-24,5,30,0.30
+4,Delta Rookie,2023-24,DDD,OLD,2023-24,4,25,0.25
+5,Echo Minimum,2023-24,EEE,OLD,2023-24,2,2.01,0.0201
+6,Foxtrot BAE,2023-24,FFF,OLD,2023-24,3,4.05,0.0405
+7,Golf MLE,2023-24,GGG,OLD,2023-24,5,12.2,0.122
+8,Hotel Review,2023-24,HHH,HHH,2023-24,8,35,0.35
