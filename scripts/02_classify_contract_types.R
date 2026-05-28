@@ -80,12 +80,17 @@ make_season_label <- function(start_year) {
   sprintf("%d-%02d", start_year, (start_year + 1) %% 100)
 }
 
-# For a contract whose FIRST season is `start_season`, return the n most-recent
-# COMPLETED seasons, most-recent first. A deal signed for 2023-24 looks back at
-# 2022-23, 2021-22, 2020-21.
-lookback_seasons <- function(start_season, n = 3) {
-  y <- season_start_year(start_season)
-  make_season_label((y - 1):(y - n))
+# For a signing/extension that occurred in the offseason of calendar year
+# `signing_year`, return the n most-recent COMPLETED seasons at signing time,
+# most-recent first. A signing in summer 2017 (UFA for 2017-18, OR an extension
+# whose new money starts later) looks back at 2016-17, 2015-16, 2014-15. A
+# signing in summer 2024 (UFA for 2024-25, OR an extension starting 2025-26)
+# looks back at 2023-24, 2022-23, 2021-22. The lookback anchor is the SIGNING
+# DATE, not the contract start — they differ for veteran extensions, where the
+# new contract often begins a season or two after the extension is signed.
+lookback_seasons <- function(signing_year, n = 3) {
+  start_years <- (signing_year - 1):(signing_year - n)
+  make_season_label(start_years)
 }
 
 # ------------------------------------------------------------------------------
@@ -120,9 +125,11 @@ load_inputs <- function(paths) {
   min_scale  <- read_csv(paths$min_scale, show_col_types = FALSE)
 
   # Required fields on the signing-event table. years_of_service is mandatory.
+  # signing_offseason_year is mandatory because it (not contract_start_season)
+  # anchors the awards lookback — see lookback_seasons() comments.
   required_event_cols <- c(
     "event_id", "player_name", "season", "signing_team", "prior_team",
-    "contract_start_season", "years_of_service",
+    "contract_start_season", "signing_offseason_year", "years_of_service",
     "average_annual_value", "cap_percentage_at_signing"
   )
   missing <- setdiff(required_event_cols, names(events))
@@ -130,6 +137,7 @@ load_inputs <- function(paths) {
     stop("signing_events is missing required columns: ",
          paste(missing, collapse = ", "),
          "\n  years_of_service in particular cannot be derived from age.",
+         "\n  signing_offseason_year drives the awards lookback for extensions.",
          call. = FALSE)
   }
 
@@ -171,10 +179,14 @@ compute_eligibility <- function(events, awards) {
     select(player_norm, season, award)
 
   # Expand each event to its three lookback seasons, ranked (1 = most recent).
+  # Lookback is anchored on signing_offseason_year — the calendar year of the
+  # offseason when the contract was signed — NOT on contract_start_season. For
+  # extensions, these can differ by one or two seasons, and using start would
+  # shift the window forward incorrectly.
   event_lb <- events %>%
-    select(event_id, player_name, contract_start_season) %>%
+    select(event_id, player_name, signing_offseason_year) %>%
     mutate(player_norm = normalize_player_name(player_name)) %>%
-    mutate(lb = map(contract_start_season, ~ lookback_seasons(.x, 3))) %>%
+    mutate(lb = map(signing_offseason_year, ~ lookback_seasons(.x, 3))) %>%
     unnest_longer(lb) %>%
     group_by(event_id) %>%
     mutate(lb_rank = row_number()) %>%
@@ -375,10 +387,10 @@ main <- function(paths) {
 
   out_cols <- c(
     "event_id", "player_name", "season", "contract_start_season",
+    "signing_offseason_year",
     "signing_team", "prior_team", "incumbent", "years_of_service", "yos_band",
     "average_annual_value", "cap_percentage_at_signing", "using_aav_proxy",
-    "minimum_salary",
-    "supermax_eligible", "eligibility_uncertain",
+    "minimum_salary", "supermax_eligible", "eligibility_uncertain",
     "contract_type", "treatment_category", "classification_flag"
   )
   out <- classified %>% select(any_of(out_cols))
