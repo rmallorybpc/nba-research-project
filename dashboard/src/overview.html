@@ -4,43 +4,62 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NBA Analysis | Overview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="assets/tmg-styles.css" />
     <script defer src="assets/nav.js"></script>
   </head>
   <body>
     <div id="tmg-nav-host"></div>
-    <main>
-      <h1>Overview</h1>
-      <section class="card">
-        <h2>Team Movement Impact Score (MIS) Rankings</h2>
-        <div class="filters" aria-label="MIS filters">
-          <label for="season-filter">Season</label>
-          <select id="season-filter">
-            <option value="all">All Seasons</option>
-            <option value="loading">Loading...</option>
-          </select>
+    <main class="tmg-page">
+      <div class="tmg-container">
+        <header class="tmg-page-header">
+          <p class="tmg-eyebrow">The Mallory Group</p>
+          <h1 class="tmg-page-title">Overview</h1>
+          <p class="tmg-page-desc">
+            Explore team-level Movement Impact Score rankings by season and division.
+          </p>
+        </header>
 
-          <label for="division-filter">Division</label>
-          <select id="division-filter">
-            <option value="all">All Divisions</option>
-            <option value="Atlantic">Atlantic</option>
-            <option value="Central">Central</option>
-            <option value="Southeast">Southeast</option>
-            <option value="Northwest">Northwest</option>
-            <option value="Pacific">Pacific</option>
-            <option value="Southwest">Southwest</option>
-          </select>
+        <section class="tmg-card-wide">
+          <p class="tmg-card-label">Team movement impact score</p>
+          <h2 class="tmg-card-title">MIS rankings</h2>
+          <div class="tmg-filters" aria-label="MIS filters">
+            <div>
+              <label class="tmg-field-label" for="season-filter">Season</label>
+              <select class="tmg-select" id="season-filter">
+                <option value="all">All Seasons</option>
+                <option value="loading">Loading...</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="tmg-field-label" for="division-filter">Division</label>
+              <select class="tmg-select" id="division-filter">
+                <option value="all">All Divisions</option>
+                <option value="Atlantic">Atlantic</option>
+                <option value="Central">Central</option>
+                <option value="Southeast">Southeast</option>
+                <option value="Northwest">Northwest</option>
+                <option value="Pacific">Pacific</option>
+                <option value="Southwest">Southwest</option>
+              </select>
+            </div>
         </div>
 
-        <div class="table-wrap">
-          <table>
+          <div class="tmg-table-wrap">
+            <table class="tmg-table">
             <thead>
               <tr>
-                <th>Rank</th>
-                <th>Team</th>
-                <th>Division</th>
-                <th>Season</th>
-                <th>MIS</th>
+                <th scope="col">Rank</th>
+                <th scope="col">Team</th>
+                <th scope="col">Division</th>
+                <th scope="col">Season</th>
+                <th scope="col">MIS</th>
               </tr>
             </thead>
             <tbody id="mis-table-body">
@@ -52,17 +71,12 @@
                 <td class="placeholder">Loading...</td>
               </tr>
             </tbody>
-          </table>
+            </table>
+          </div>
+        </section>
+
+        <footer class="tmg-footer">TMG Tool Suite · NBA Analysis</footer>
         </div>
-      </section>
-      <p class="links">
-        <a href="index.html">Welcome</a>
-        <a href="findings.html">Key Findings</a>
-        <a href="overview.html">Overview</a>
-        <a href="team.html">Team</a>
-        <a href="explorer.html">Explorer</a>
-        <a href="sandbox.html">Sandbox</a>
-      </p>
     </main>
     <script>
       const BASE = "/nba-research-project";
@@ -94,11 +108,7 @@
         if (!rows.length) {
           body.innerHTML = `
             <tr>
-              <td class="placeholder">Loading...</td>
-              <td class="placeholder">Loading...</td>
-              <td class="placeholder">Loading...</td>
-              <td class="placeholder">Loading...</td>
-              <td class="placeholder">Loading...</td>
+              <td class="placeholder" colspan="5">No rows match the selected filters.</td>
             </tr>
           `;
           return;

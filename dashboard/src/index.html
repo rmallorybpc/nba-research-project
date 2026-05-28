@@ -4,15 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NBA Analysis | Welcome</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="assets/tmg-styles.css" />
     <script defer src="assets/nav.js"></script>
   </head>
   <body>
     <div id="tmg-nav-host"></div>
-    <main>
-      <h1>Welcome</h1>
-      <section class="card research">
-        <h2>Research Framing</h2>
+    <main class="tmg-page">
+      <div class="tmg-container">
+        <header class="tmg-page-header">
+          <p class="tmg-eyebrow">The Mallory Group</p>
+          <h1 class="tmg-page-title">NBA Analysis Dashboard</h1>
+          <p class="tmg-page-desc">
+            Evaluate how contract pathways and team movement relate to player
+            outcomes across recent NBA seasons.
+          </p>
+        </header>
+
+        <section class="tmg-card-wide" aria-label="Research framing">
+          <p class="tmg-card-label">Research framing</p>
+          <h2 class="tmg-card-title">Stay incentives versus movement effects</h2>
         <p>
           Bird rights and the supermax create a structural incentive for stars to
           stay with their current team, while the fresh-start effect suggests
@@ -31,40 +47,34 @@
         <p>
           <a href="../docs/research-question.md">Read the full research framing</a>
         </p>
-      </section>
+        </section>
 
-      <section class="summary-grid" aria-label="Research summary cards">
-        <article class="card">
-          <h2>The Question</h2>
+        <section class="tmg-bento-grid" aria-label="Research summary cards">
+          <article class="tmg-card" role="group" aria-label="The question">
+            <p class="tmg-card-label">The question</p>
           <p>
             Do supermax re-signings trail otherwise comparable players who moved
             teams after controlling for age and pre-signing trajectory?
           </p>
-        </article>
-        <article class="card">
-          <h2>The Data</h2>
+          </article>
+          <article class="tmg-card" role="group" aria-label="The data">
+            <p class="tmg-card-label">The data</p>
           <p>
             Nine NBA seasons, 2016-17 to 2024-25, with contract classification and
             EPM-based performance outcomes.
           </p>
-        </article>
-        <article class="card">
-          <h2>The Method</h2>
+          </article>
+          <article class="tmg-card" role="group" aria-label="The method">
+            <p class="tmg-card-label">The method</p>
           <p>
             Compare outcomes across the three treatment groups to isolate movement
             versus stay effects under contract context.
           </p>
-        </article>
-      </section>
-      <p class="links">
-        <a href="index.html">Welcome</a>
-        <a href="findings.html">Key Findings</a>
-        <a href="overview.html">Overview</a>
-        <a href="team.html">Team</a>
-        <a href="explorer.html">Explorer</a>
-        <a href="sandbox.html">Sandbox</a>
-      </p>
-      <footer>TMG Tool Suite placeholder dashboard</footer>
+          </article>
+        </section>
+
+        <footer class="tmg-footer">TMG Tool Suite · NBA Analysis</footer>
+      </div>
     </main>
   </body>
 </html>

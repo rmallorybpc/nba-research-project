@@ -4,25 +4,38 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NBA Analysis | Sandbox</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="assets/tmg-styles.css" />
     <script defer src="assets/nav.js"></script>
   </head>
   <body>
     <div id="tmg-nav-host"></div>
-    <main>
-      <h1>Sandbox</h1>
-      <section class="card">
+    <main class="tmg-page">
+      <div class="tmg-container">
+        <header class="tmg-page-header">
+          <p class="tmg-eyebrow">The Mallory Group</p>
+          <h1 class="tmg-page-title">Sandbox</h1>
+          <p class="tmg-page-desc">
+            Experimental workspace for testing transformations and analysis ideas.
+          </p>
+        </header>
+
+        <section class="tmg-bento-grid">
+          <article class="tmg-card" role="group" aria-label="Sandbox data status">
+            <p class="tmg-card-label">Pipeline status</p>
+            <h2 class="tmg-card-title">Sandbox dataset readiness</h2>
         <p>Experimental analysis area placeholder.</p>
         <p>Status: <span class="placeholder" id="status">Loading...</span></p>
-      </section>
-      <p class="links">
-        <a href="index.html">Welcome</a>
-        <a href="findings.html">Key Findings</a>
-        <a href="overview.html">Overview</a>
-        <a href="team.html">Team</a>
-        <a href="explorer.html">Explorer</a>
-        <a href="sandbox.html">Sandbox</a>
-      </p>
+          </article>
+        </section>
+
+        <footer class="tmg-footer">TMG Tool Suite · NBA Analysis</footer>
+      </div>
     </main>
     <script>
       const BASE = "/nba-research-project";
