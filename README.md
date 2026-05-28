@@ -1,5 +1,9 @@
 # nba-research-project
 
+## Documentation
+
+- NBA awards supermax reference: [dashboard/docs/nba-awards-reference.md](dashboard/docs/nba-awards-reference.md)
+
 ## Data Validation
 
 Run the awards completeness check before contract classification:
