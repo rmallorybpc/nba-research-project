@@ -1,9 +1,9 @@
 const TOOL_SUITE_ROOT = "/nba-research-project/";
 
 const pages = [
-  { href: "welcome.html", label: "Welcome" },
+  { href: "index.html", label: "Welcome" },
   { href: "findings.html", label: "Key Findings" },
-  { href: "index.html", label: "Overview" },
+  { href: "overview.html", label: "Overview" },
   { href: "team.html", label: "Team" },
   { href: "explorer.html", label: "Explorer" },
   { href: "sandbox.html", label: "Sandbox" },
