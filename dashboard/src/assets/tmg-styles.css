@@ -86,6 +86,32 @@ main {
   padding: 1rem;
 }
 
+.research h2 {
+  margin-top: 0;
+  margin-bottom: 0.7rem;
+}
+
+.research h3 {
+  margin-top: 1.2rem;
+  margin-bottom: 0.45rem;
+  color: var(--sage-dark);
+}
+
+.research p,
+.research li {
+  line-height: 1.55;
+}
+
+.research ul {
+  margin-top: 0.35rem;
+  margin-bottom: 0.9rem;
+  padding-left: 1.25rem;
+}
+
+.research li + li {
+  margin-top: 0.45rem;
+}
+
 .placeholder {
   color: var(--sage-dark);
   font-weight: 600;
@@ -100,4 +126,14 @@ footer {
   margin-top: 2rem;
   font-size: 0.9rem;
   color: #4a4a4a;
+}
+
+@media (max-width: 720px) {
+  .research {
+    padding: 0.9rem;
+  }
+
+  .research h3 {
+    margin-top: 1rem;
+  }
 }
