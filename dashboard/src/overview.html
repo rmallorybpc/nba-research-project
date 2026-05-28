@@ -11,109 +11,49 @@
     <div id="tmg-nav-host"></div>
     <main>
       <h1>Overview</h1>
-      <section class="card research">
-        <h2>Research Question</h2>
+      <section class="card">
+        <h2>Team Movement Impact Score (MIS) Rankings</h2>
+        <div class="filters" aria-label="MIS filters">
+          <label for="season-filter">Season</label>
+          <select id="season-filter">
+            <option value="all">All Seasons</option>
+            <option value="loading">Loading...</option>
+          </select>
 
-        <h3>The Problem</h3>
-        <p>
-          The NBA gives a team a structural advantage in keeping its own stars that
-          no rival can match. Through Bird rights, a team can re-sign its own
-          player even when doing so pushes the team over the salary cap. Through the
-          supermax, officially the Designated Veteran Player Extension, a qualifying
-          player can start a new contract at 35% of the salary cap, a figure no
-          other team is allowed to offer him.
-        </p>
-        <p>
-          Behavioral economics points the other way. The fresh-start or reset effect,
-          studied by Hengchen Dai and others, finds that people often raise
-          performance after a temporal or situational reset: a new job, a new
-          beginning, a clean slate. A player who changes teams gets that reset. A
-          player who re-signs at home does not.
-        </p>
-        <p>
-          That creates a collision between structural and psychological incentives.
-          The money says stay. The fresh-start evidence suggests moving might improve
-          performance. This study asks what actually happens when a star takes the
-          supermax and stays.
-        </p>
+          <label for="division-filter">Division</label>
+          <select id="division-filter">
+            <option value="all">All Divisions</option>
+            <option value="Atlantic">Atlantic</option>
+            <option value="Central">Central</option>
+            <option value="Southeast">Southeast</option>
+            <option value="Northwest">Northwest</option>
+            <option value="Pacific">Pacific</option>
+            <option value="Southwest">Southwest</option>
+          </select>
+        </div>
 
-        <h3>The Question</h3>
-        <p>
-          Do players who re-sign with their incumbent team on a supermax underperform
-          contract-equivalent peers who changed teams, after controlling for age and
-          pre-signing performance trajectory?
-        </p>
-        <p>
-          The core hypothesis is that supermax recipients show the largest negative
-          performance delta in the middle years of the contract relative to
-          expectation, because they receive neither the fresh-start benefit of a move
-          nor the market discipline that competitive offers can impose.
-        </p>
-
-        <h3>Why This Is an NBA Question</h3>
-        <p>
-          This research extends a prior study that applied the same behavioral
-          economics lens to NHL free agency. The lens transfers, but the question
-          does not. The NHL has no supermax and no mechanism that lets one team pay
-          a player a number every other team is forbidden to match. That NBA-specific
-          rule is the center of this study.
-        </p>
-
-        <h3>How It Is Measured</h3>
-        <p>Each contract decision is sorted into one of three treatment groups:</p>
-        <ul>
-          <li>
-            Re-signed on a supermax: stayed with the incumbent team on a Designated
-            Veteran contract or extension.
-          </li>
-          <li>
-            Re-signed on a standard deal: stayed with the incumbent team on any
-            non-supermax contract.
-          </li>
-          <li>
-            Changed teams: signed with a different team as an unrestricted free
-            agent.
-          </li>
-        </ul>
-        <p>
-          Performance is measured with Estimated Plus-Minus (EPM), a modern impact
-          metric that separates offensive and defensive contribution. The study window
-          spans nine seasons from 2016-17 through 2024-25, covering both the
-          post-television-deal cap environment and the player-empowerment era.
-        </p>
-        <p>
-          Contract types are classified with published CBA thresholds, including the
-          25%, 30%, and 35% maximum-salary tiers by years of service and supermax
-          eligibility rules.
-        </p>
-
-        <h3>What This Study Does Not Claim</h3>
-        <p>
-          This is a single-builder research project driven by intellectual curiosity,
-          not a predictive product. It does not claim to forecast individual outcomes,
-          advise on roster construction, or replace front-office analysis. It is a
-          transparent, auditable test of whether a well-documented behavioral pattern
-          appears in NBA contract decisions.
-        </p>
-
-        <h3>Roadmap: Future Questions</h3>
-        <ul>
-          <li>
-            The James Harden effect: what happens when stars force moves while still
-            under contract, and how should those moves be coded consistently?
-          </li>
-          <li>
-            Mean reversion across all signings: whether high-performing signings
-            regress and low-performing signings rebound.
-          </li>
-          <li>
-            Player-empowerment-era selection effects: whether free-agency entrants are
-            a non-random talent sample because top players increasingly engineer
-            trades.
-          </li>
-        </ul>
-
-        <p>Status: <span class="placeholder" id="status">Loading...</span></p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Team</th>
+                <th>Division</th>
+                <th>Season</th>
+                <th>MIS</th>
+              </tr>
+            </thead>
+            <tbody id="mis-table-body">
+              <tr>
+                <td class="placeholder">Loading...</td>
+                <td class="placeholder">Loading...</td>
+                <td class="placeholder">Loading...</td>
+                <td class="placeholder">Loading...</td>
+                <td class="placeholder">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
       <p class="links">
         <a href="index.html">Welcome</a>
@@ -126,21 +66,150 @@
     </main>
     <script>
       const BASE = "/nba-research-project";
-      async function loadStatus() {
-        const target = document.getElementById("status");
+      const divisions = [
+        "Atlantic",
+        "Central",
+        "Southeast",
+        "Northwest",
+        "Pacific",
+        "Southwest",
+      ];
+      let misRows = [];
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function renderRows(rows) {
+        const body = document.getElementById("mis-table-body");
+        if (!body) {
+          return;
+        }
+
+        if (!rows.length) {
+          body.innerHTML = `
+            <tr>
+              <td class="placeholder">Loading...</td>
+              <td class="placeholder">Loading...</td>
+              <td class="placeholder">Loading...</td>
+              <td class="placeholder">Loading...</td>
+              <td class="placeholder">Loading...</td>
+            </tr>
+          `;
+          return;
+        }
+
+        body.innerHTML = rows
+          .map(
+            (row) => `
+            <tr>
+              <td>${escapeHtml(row.rank || "Loading...")}</td>
+              <td>${escapeHtml(row.team || "Loading...")}</td>
+              <td>${escapeHtml(row.division || "Loading...")}</td>
+              <td>${escapeHtml(row.season || "Loading...")}</td>
+              <td>${escapeHtml(row.mis || "Loading...")}</td>
+            </tr>
+          `
+          )
+          .join("");
+      }
+
+      function applyFilters() {
+        const seasonFilter = document.getElementById("season-filter");
+        const divisionFilter = document.getElementById("division-filter");
+        if (!seasonFilter || !divisionFilter) {
+          return;
+        }
+
+        let filtered = misRows.slice();
+        if (seasonFilter.value !== "all") {
+          filtered = filtered.filter((row) => row.season === seasonFilter.value);
+        }
+        if (divisionFilter.value !== "all") {
+          filtered = filtered.filter(
+            (row) => row.division === divisionFilter.value
+          );
+        }
+
+        renderRows(filtered);
+      }
+
+      async function loadMisTable() {
+        const seasonFilter = document.getElementById("season-filter");
+        const divisionFilter = document.getElementById("division-filter");
+
+        if (seasonFilter) {
+          seasonFilter.addEventListener("change", applyFilters);
+        }
+        if (divisionFilter) {
+          divisionFilter.addEventListener("change", applyFilters);
+        }
+
         try {
-          const response = await fetch(`${BASE}/assets/data/overview.csv`);
+          const response = await fetch(
+            `${BASE}/assets/data/team_mis_by_season.csv`
+          );
           if (response.ok) {
             const text = await response.text();
-            if (text.trim()) {
-              target.textContent = "Loaded";
+            const lines = text
+              .split(/\r?\n/)
+              .map((line) => line.trim())
+              .filter(Boolean);
+
+            if (lines.length > 1) {
+              const headers = lines[0].split(",").map((header) => header.trim());
+              const rows = lines.slice(1).map((line) => {
+                const values = line.split(",").map((value) => value.trim());
+                const row = {};
+                headers.forEach((header, idx) => {
+                  row[header.toLowerCase()] = values[idx] || "";
+                });
+                return {
+                  rank: row.rank || "",
+                  team: row.team || row.team_name || "",
+                  division: divisions.includes(row.division)
+                    ? row.division
+                    : "",
+                  season: row.season || "",
+                  mis: row.mis || row.movement_impact_score || "",
+                };
+              });
+
+              misRows = rows;
+
+              if (seasonFilter) {
+                const seasons = [...new Set(rows.map((row) => row.season))]
+                  .filter(Boolean)
+                  .sort();
+                seasonFilter.innerHTML =
+                  '<option value="all">All Seasons</option>' +
+                  seasons
+                    .map(
+                      (season) =>
+                        `<option value="${escapeHtml(season)}">${escapeHtml(
+                          season
+                        )}</option>`
+                    )
+                    .join("");
+              }
+
+              applyFilters();
+              return;
             }
           }
         } catch (_err) {
-          // Keep placeholder text while data files are still empty/missing.
+          // Keep placeholders when CSV is not available yet.
         }
+
+        renderRows([]);
       }
-      loadStatus();
+
+      loadMisTable();
     </script>
   </body>
 </html>

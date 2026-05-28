@@ -11,9 +11,50 @@
     <div id="tmg-nav-host"></div>
     <main>
       <h1>Welcome</h1>
-      <section class="card">
-        <p>Initial landing content and project orientation.</p>
-        <p>Status: <span class="placeholder" id="status">Loading...</span></p>
+      <section class="card research">
+        <h2>Research Framing</h2>
+        <p>
+          Bird rights and the supermax create a structural incentive for stars to
+          stay with their current team, while the fresh-start effect suggests
+          performance can improve after a move. In short, the money says stay and
+          the psychology says move.
+        </p>
+        <p>
+          The core question is whether players who re-sign on supermax deals
+          underperform contract-equivalent peers who change teams.
+        </p>
+        <p>
+          We measure this with three treatment groups, re-signed supermax,
+          re-signed standard, and changed teams, using EPM outcomes from 2016-17
+          through 2024-25.
+        </p>
+        <p>
+          <a href="../docs/research-question.md">Read the full research framing</a>
+        </p>
+      </section>
+
+      <section class="summary-grid" aria-label="Research summary cards">
+        <article class="card">
+          <h2>The Question</h2>
+          <p>
+            Do supermax re-signings trail otherwise comparable players who moved
+            teams after controlling for age and pre-signing trajectory?
+          </p>
+        </article>
+        <article class="card">
+          <h2>The Data</h2>
+          <p>
+            Nine NBA seasons, 2016-17 to 2024-25, with contract classification and
+            EPM-based performance outcomes.
+          </p>
+        </article>
+        <article class="card">
+          <h2>The Method</h2>
+          <p>
+            Compare outcomes across the three treatment groups to isolate movement
+            versus stay effects under contract context.
+          </p>
+        </article>
       </section>
       <p class="links">
         <a href="index.html">Welcome</a>
@@ -25,23 +66,5 @@
       </p>
       <footer>TMG Tool Suite placeholder dashboard</footer>
     </main>
-    <script>
-      const BASE = "/nba-research-project";
-      async function loadStatus() {
-        const target = document.getElementById("status");
-        try {
-          const response = await fetch(`${BASE}/assets/data/welcome.csv`);
-          if (response.ok) {
-            const text = await response.text();
-            if (text.trim()) {
-              target.textContent = "Loaded";
-            }
-          }
-        } catch (_err) {
-          // Keep placeholder text while data files are still empty/missing.
-        }
-      }
-      loadStatus();
-    </script>
   </body>
 </html>
