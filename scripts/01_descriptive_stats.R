@@ -53,7 +53,7 @@ load_inputs <- function(paths) {
   mis    <- read_csv(paths$mis,    show_col_types = FALSE)
 
   # Join MIS into events on event_id. left_join keeps all events even when MIS
-  # is missing (e.g. classified but pre-EPM data not yet ingested), which is
+  # is missing (e.g. classified but pre-signing impact data not yet ingested), which is
   # correct for population counts.
   events %>% left_join(mis, by = "event_id", suffix = c("", ".mis"))
 }
@@ -104,8 +104,8 @@ table_mis_by_group <- function(df) {
       sd_mis_overall            = sd(mis_overall, na.rm = TRUE),
       mean_mis_offense          = mean(mis_offense, na.rm = TRUE),
       mean_mis_defense          = mean(mis_defense, na.rm = TRUE),
-      mean_pre_epm_overall      = mean(pre_epm_overall_mw, na.rm = TRUE),
-      mean_post_epm_overall     = mean(post_epm_overall_mw, na.rm = TRUE),
+      mean_pre_impact_overall      = mean(pre_impact_overall_mw, na.rm = TRUE),
+      mean_post_impact_overall     = mean(post_impact_overall_mw, na.rm = TRUE),
       pct_with_negative_mis     = mean(mis_overall < 0, na.rm = TRUE),
       .groups = "drop"
     ) %>%
@@ -154,7 +154,7 @@ print_report <- function(counts, groups, by_season) {
   pwalk(groups, function(treatment_category, n_events,
                          mean_mis_overall, median_mis_overall, sd_mis_overall,
                          mean_mis_offense, mean_mis_defense,
-                         mean_pre_epm_overall, mean_post_epm_overall,
+                         mean_pre_impact_overall, mean_post_impact_overall,
                          pct_with_negative_mis) {
     message(sprintf("  %-22s %-6d %+9.3f %+10.3f %10.3f %.1f%%",
                     treatment_category, n_events,
