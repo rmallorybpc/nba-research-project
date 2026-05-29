@@ -47,8 +47,6 @@ suppressPackageStartupMessages({
   library(lubridate)
 })
 
-source("R/01_ingest/fetch_contracts.R")
-
 # ------------------------------------------------------------------------------
 # Config
 # ------------------------------------------------------------------------------
@@ -76,6 +74,10 @@ EXCLUDE_CONTRACT_KINDS <- c(
   "rookie_scale",     # rookie-scale first contract (no choice involved)
   "rookie_extension"  # automatic rookie-scale extensions (Rose Rule cases kept)
 )
+
+# Throttle for any web scraping the fetchers do. Spotrac and Basketball
+# Reference both rate-limit aggressively. Be a good citizen.
+SCRAPE_SLEEP_SECONDS <- 4
 
 # ------------------------------------------------------------------------------
 # Helpers: season arithmetic
@@ -160,7 +162,18 @@ INGEST_EXTRA_COLS <- c(
 #   "rookie_scale", "rookie_extension", "ten_day", "two_way",
 #   "exhibit_10", "renegotiation"})
 #
-# Source: implemented in R/01_ingest/fetch_contracts.R and sourced above.
+# Source: Spotrac (https://www.spotrac.com/nba/free-agents/_/year/{Y}) for UFAs
+# and Spotrac's extension tracker; Basketball Reference's per-season transactions
+# page as a cross-check. Both require rvest scraping with SCRAPE_SLEEP_SECONDS
+# throttling. Cache raw HTML under {raw_dir}/contracts/{season}.html so re-runs
+# don't re-hit the network.
+fetch_contracts_for_season <- function(season, raw_dir) {
+  # Implementation lives in R/01_ingest/fetch_contracts.R — sourced below.
+  stop("fetch_contracts_for_season() requires fetch_contracts.R to be sourced. ",
+       "Add `source('R/01_ingest/fetch_contracts.R')` near the top of this ",
+       "file (after the library loads) and that file's definition will ",
+       "override this stub.", call. = FALSE)
+}
 
 # Return: data frame with columns
 #   player_name (chr), birth_date (Date), draft_year (int),
