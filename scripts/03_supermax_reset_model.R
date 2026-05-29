@@ -20,14 +20,14 @@
 # Main specification :
 #   mis_overall ~ treatment_category
 #                 + age_at_signing
-#                 + pre_epm_overall_mw
+#                 + pre_impact_overall_mw
 #                 + factor(contract_start_season)
 #
 # Robustness checks :
 #   (a) repeat for mis_offense and mis_defense - does decline show up
 #       differently on the two sides of the floor?
 #   (b) drop age control - sanity that age isn't doing all the work
-#   (c) drop pre-EPM control - sanity that pre-trajectory isn't doing it
+#   (c) drop pre-impact control - sanity that pre-trajectory isn't doing it
 #   (d) restrict to events with contract_years >= 3 - supermax is always
 #       long, so short-contract events may be a different population
 #
@@ -79,7 +79,7 @@ load_complete_events <- function(paths) {
            !is.na(mis_overall),
            !is.na(treatment_category),
            !is.na(age_at_signing),
-           !is.na(pre_epm_overall_mw))
+           !is.na(pre_impact_overall_mw))
 
   # Make re_signed_standard the regression baseline. This is the natural
   # reference: "stayed but did NOT take a supermax", against which both
@@ -141,7 +141,7 @@ group_means_table <- function(df) {
       mean_mis_offense   = mean(mis_offense,  na.rm = TRUE),
       mean_mis_defense   = mean(mis_defense,  na.rm = TRUE),
       mean_age           = mean(age_at_signing, na.rm = TRUE),
-      mean_pre_epm       = mean(pre_epm_overall_mw, na.rm = TRUE),
+      mean_pre_impact       = mean(pre_impact_overall_mw, na.rm = TRUE),
       .groups = "drop"
     ) %>%
     arrange(treatment_category)
@@ -153,7 +153,7 @@ group_means_table <- function(df) {
 
 run_main_spec <- function(df) {
   f <- mis_overall ~ treatment_category + age_at_signing +
-       pre_epm_overall_mw + factor(contract_start_season)
+       pre_impact_overall_mw + factor(contract_start_season)
   tidy_model(fit_model(f, df), "main")
 }
 
@@ -161,15 +161,15 @@ run_robustness <- function(df) {
   specs <- list(
     list(label = "offense_only",
          formula = mis_offense ~ treatment_category + age_at_signing +
-                   pre_epm_offense_mw + factor(contract_start_season),
+            pre_impact_offense_mw + factor(contract_start_season),
          data = df),
     list(label = "defense_only",
          formula = mis_defense ~ treatment_category + age_at_signing +
-                   pre_epm_defense_mw + factor(contract_start_season),
+            pre_impact_defense_mw + factor(contract_start_season),
          data = df),
     list(label = "no_age_control",
          formula = mis_overall ~ treatment_category +
-                   pre_epm_overall_mw + factor(contract_start_season),
+            pre_impact_overall_mw + factor(contract_start_season),
          data = df),
     list(label = "no_pre_control",
          formula = mis_overall ~ treatment_category + age_at_signing +
@@ -177,7 +177,7 @@ run_robustness <- function(df) {
          data = df),
     list(label = "long_contracts_only",
          formula = mis_overall ~ treatment_category + age_at_signing +
-                   pre_epm_overall_mw + factor(contract_start_season),
+              pre_impact_overall_mw + factor(contract_start_season),
          data = df %>% filter(contract_years >= 3))
   )
   map_dfr(specs, function(s) {
@@ -201,7 +201,7 @@ print_report <- function(groups, main_tab, robust_tab) {
                          mean_mis_overall, median_mis_overall,
                          sd_mis_overall, se_mis_overall,
                          mean_mis_offense, mean_mis_defense,
-                         mean_age, mean_pre_epm) {
+                         mean_age, mean_pre_impact) {
     message(sprintf("  %-22s %-6d %+11.3f %+12.3f %.3f",
                     treatment_category, n,
                     mean_mis_overall, median_mis_overall, se_mis_overall))
