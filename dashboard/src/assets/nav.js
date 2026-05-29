@@ -9,14 +9,55 @@ const pages = [
   { href: "sandbox.html", label: "Sandbox" },
 ];
 
+const toolSuiteRepos = [
+  {
+    href: "https://rmallorybpc.github.io/pdf-multi-agent-analysis/",
+    label: "PDF Multi-Agent Analysis",
+  },
+  {
+    href: "https://rmallorybpc.github.io/housing-market-intel/",
+    label: "Housing Market Intel",
+  },
+  {
+    href: "https://rmallorybpc.github.io/real-estate-report/",
+    label: "Real Estate Report",
+  },
+  {
+    href: "https://rmallorybpc.github.io/nflanalysis/dashboard/src/",
+    label: "NFL Analysis",
+  },
+  {
+    href: "https://rmallorybpc.github.io/nhl-free-agency-research/",
+    label: "NHL Analysis",
+  },
+  {
+    href: "https://rmallorybpc.github.io/recipes/",
+    label: "Recipe Book",
+  },
+];
+
 function renderNav() {
   const host = document.getElementById("tmg-nav-host");
   if (!host) {
     return;
   }
 
-  const links = pages
-    .map((page) => `<a href="${page.href}" role="menuitem">${page.label}</a>`)
+  const path = window.location.pathname;
+  const currentPage = path.split("/").pop() || "index.html";
+
+  const pageLinks = pages
+    .map((page) => {
+      const isCurrent = currentPage === page.href;
+      const currentAttr = isCurrent ? ' aria-current="page"' : "";
+      return `<a href="${page.href}"${currentAttr}>${page.label}</a>`;
+    })
+    .join("");
+
+  const repoLinks = toolSuiteRepos
+    .map(
+      (repo) =>
+        `<a href="${repo.href}" target="_blank" rel="noopener noreferrer" role="menuitem">${repo.label}</a>`
+    )
     .join("");
 
   host.innerHTML = `
@@ -26,6 +67,9 @@ function renderNav() {
         <div class="tmg-logo-divider" aria-hidden="true"></div>
         <span>G</span>
       </a>
+      <div class="tmg-page-links" aria-label="Dashboard pages">
+        ${pageLinks}
+      </div>
       <div class="tmg-dropdown-wrap">
         <button class="tmg-dropdown-btn" id="tmgDdBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tmgDdMenu">
           TMG Tool Suite
@@ -34,7 +78,7 @@ function renderNav() {
           </svg>
         </button>
         <div class="tmg-dropdown-menu" id="tmgDdMenu" role="menu">
-          ${links}
+          ${repoLinks}
         </div>
       </div>
     </nav>
