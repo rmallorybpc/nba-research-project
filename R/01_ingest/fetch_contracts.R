@@ -16,7 +16,7 @@
 # Scope    : UFA signings only. Veteran extensions do NOT appear on this page
 #            because they were not "free agents" the summer they signed (their
 #            existing contracts were still in force). Extensions are handled in
-#            a separate fetch step - see fetch_extensions.R (TODO).
+#            a separate fetch step - see fetch_extensions.R.
 #
 # View-source vs rendered : rvest::read_html() parses the raw HTTP response
 #            (what you would see in "View Page Source"), NOT the JavaScript-

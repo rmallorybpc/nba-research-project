@@ -261,6 +261,7 @@ fetch_season_rosters <- function(seasons, raw_dir) {
 # Load local helper implementations when present. These override stubs above.
 helper_sources <- c(
   "R/01_ingest/fetch_contracts.R",
+  "R/01_ingest/fetch_extensions.R",
   "R/01_ingest/fetch_season_rosters.R",
   "R/03_features/fetch_player_metadata.R"
 )
