@@ -4,7 +4,7 @@
 # Purpose : Compute Movement Impact Score (MIS) for each classified signing
 #           event. The MIS captures whether the deal delivered the performance
 #           the team paid for, measured as the change in Estimated Plus-Minus
-#           (EPM) from a pre-signing baseline window to a post-signing
+#           (BPM) from a pre-signing baseline window to a post-signing
 #           realized window.
 #
 #           The analytical question MIS supports: do supermax recipients show
@@ -13,30 +13,31 @@
 #
 # Inputs  : data/processed/signing_events_classified.csv
 #             (one row per classified signing - from 02_classify_contract_types)
-#           data/processed/nba_player_epm.csv
-#             (one row per player-season with EPM and minutes played - built by
-#              a future R/01_ingest/fetch_epm.R against Dunks and Threes data;
-#              schema documented below.)
+#           data/processed/nba_player_impact.csv
+#             (one row per player-season with an impact metric and minutes -
+#              produced by R/01_ingest/fetch_player_impact.R, which currently pulls
+#              Box Plus-Minus from Basketball Reference. Column names are metric-
+#              agnostic so a future EPM fetcher swaps in transparently.)
 #
 # Output  : data/processed/signing_events_mis.csv
 #
 # Depends : dplyr, tidyr, readr, stringr, purrr, tibble
 #
-# EPM schema (required columns in nba_player_epm.csv):
+# Impact metric schema (required columns in nba_player_impact.csv):
 #   player_name    chr     - should normalize to the same form as the classifier
 #   season         chr     - "YYYY-YY"
-#   epm_overall    dbl     - Estimated Plus-Minus, season aggregate
-#   epm_offense    dbl     - offensive component (O-EPM)
-#   epm_defense    dbl     - defensive component (D-EPM)
+#   impact_overall    dbl     - season-aggregate impact (BPM in launch, EPM-compatible)
+#   impact_offense    dbl     - offensive component (OBPM in launch)
+#   impact_defense    dbl     - defensive component (DBPM in launch)
 #   minutes_played int     - total regular-season minutes
 #   games_played   int     - total regular-season games (QA only)
 #
 # Default formula (revisable - see "Formula choices" below):
-#   pre_epm  = minutes-weighted mean EPM over the PRE_WINDOW_SEASONS seasons
-#              ending the season before contract_start_season.
-#   post_epm = minutes-weighted mean EPM over the contract_years seasons
-#              starting at contract_start_season.
-#   MIS      = post_epm - pre_epm
+#   pre_impact  = minutes-weighted mean impact metric over PRE_WINDOW_SEASONS
+#               seasons ending the season before contract_start_season.
+#   post_impact = minutes-weighted mean impact metric over contract_years seasons
+#               starting at contract_start_season.
+#   MIS      = post_impact - pre_impact
 #
 # Direction: positive MIS = player performed better under the new contract;
 # negative MIS = player declined post-signing. The supermax-reset hypothesis
@@ -66,7 +67,7 @@ suppressPackageStartupMessages({
 
 paths <- list(
   events   = "data/processed/signing_events_classified.csv",
-  epm      = "data/processed/nba_player_epm.csv",
+  impact   = "data/processed/nba_player_impact.csv",
   out      = "data/processed/signing_events_mis.csv"
 )
 
@@ -143,14 +144,14 @@ mw_mean <- function(values, weights) {
 # ------------------------------------------------------------------------------
 
 load_inputs <- function(paths) {
-  walk(paths[c("events", "epm")], function(p) {
+  walk(paths[c("events", "impact")], function(p) {
     if (!file.exists(p)) {
       stop("Required input not found: ", p, call. = FALSE)
     }
   })
 
   events <- read_csv(paths$events, show_col_types = FALSE)
-  epm    <- read_csv(paths$epm,    show_col_types = FALSE)
+  impact <- read_csv(paths$impact,    show_col_types = FALSE)
 
   required_event_cols <- c(
     "event_id", "player_name", "contract_start_season", "contract_years",
@@ -162,18 +163,18 @@ load_inputs <- function(paths) {
          paste(missing_e, collapse = ", "), call. = FALSE)
   }
 
-  required_epm_cols <- c("player_name", "season",
-                         "epm_overall", "epm_offense", "epm_defense",
+  required_impact_cols <- c("player_name", "season",
+                         "impact_overall", "impact_offense", "impact_defense",
                          "minutes_played")
-  missing_p <- setdiff(required_epm_cols, names(epm))
+  missing_p <- setdiff(required_impact_cols, names(impact))
   if (length(missing_p) > 0) {
-    stop("EPM table missing required columns: ",
+    stop("Impact metric table missing required columns: ",
          paste(missing_p, collapse = ", "),
          "\n  Expected schema is documented in the script header.",
          call. = FALSE)
   }
 
-  list(events = events, epm = epm)
+  list(events = events, impact = impact)
 }
 
 # ------------------------------------------------------------------------------
@@ -207,17 +208,17 @@ attach_windows <- function(events) {
 # Window aggregation
 #
 # For a list of events with a window column, expand to one row per (event,
-# season-in-window), join EPM, filter by minimum minutes, then collapse back
-# to one row per event with minutes-weighted means for each EPM dimension.
+# season-in-window), join the impact metric, filter by minimum minutes, then
+# collapse to one row per event with minutes-weighted means per dimension.
 # ------------------------------------------------------------------------------
 
-aggregate_window <- function(events_with_window, epm,
+aggregate_window <- function(events_with_window, impact,
                              window_col, label_suffix) {
 
-  epm_norm <- epm %>%
+  impact_norm <- impact %>%
     mutate(name_norm = normalize_player_name(player_name)) %>%
     select(name_norm, season,
-           epm_overall, epm_offense, epm_defense,
+           impact_overall, impact_offense, impact_defense,
            minutes_played, games_played)
 
   ev <- events_with_window %>%
@@ -226,7 +227,7 @@ aggregate_window <- function(events_with_window, epm,
 
   expanded <- ev %>%
     unnest_longer(all_of(window_col), values_to = "season") %>%
-    left_join(epm_norm, by = c("name_norm", "season"))
+    left_join(impact_norm, by = c("name_norm", "season"))
 
   # Apply minimum-minutes filter for window aggregation. Seasons under the
   # threshold are excluded from the mean but still surface in QA counts.
@@ -236,9 +237,9 @@ aggregate_window <- function(events_with_window, epm,
   agg <- valid %>%
     group_by(event_id) %>%
     summarise(
-      epm_overall_mw    = mw_mean(epm_overall, minutes_played),
-      epm_offense_mw    = mw_mean(epm_offense, minutes_played),
-      epm_defense_mw    = mw_mean(epm_defense, minutes_played),
+      impact_overall_mw    = mw_mean(impact_overall, minutes_played),
+      impact_offense_mw    = mw_mean(impact_offense, minutes_played),
+      impact_defense_mw    = mw_mean(impact_defense, minutes_played),
       total_minutes     = sum(minutes_played, na.rm = TRUE),
       total_games       = sum(games_played,   na.rm = TRUE),
       seasons_valid     = n(),
@@ -268,12 +269,12 @@ aggregate_window <- function(events_with_window, epm,
 # Main MIS computation
 # ------------------------------------------------------------------------------
 
-compute_mis <- function(events, epm) {
+compute_mis <- function(events, impact) {
 
   ev_windows <- attach_windows(events)
 
-  pre  <- aggregate_window(ev_windows, epm, "pre_window_seasons",  "pre")
-  post <- aggregate_window(ev_windows, epm, "post_window_seasons", "post")
+  pre  <- aggregate_window(ev_windows, impact, "pre_window_seasons",  "pre")
+  post <- aggregate_window(ev_windows, impact, "post_window_seasons", "post")
 
   joined <- ev_windows %>%
     left_join(pre,  by = "event_id") %>%
@@ -282,9 +283,9 @@ compute_mis <- function(events, epm) {
   joined %>%
     mutate(
       # Core MIS - the headline metric. Negative = decline post-signing.
-      mis_overall = post_epm_overall_mw - pre_epm_overall_mw,
-      mis_offense = post_epm_offense_mw - pre_epm_offense_mw,
-      mis_defense = post_epm_defense_mw - pre_epm_defense_mw,
+      mis_overall = post_impact_overall_mw - pre_impact_overall_mw,
+      mis_offense = post_impact_offense_mw - pre_impact_offense_mw,
+      mis_defense = post_impact_defense_mw - pre_impact_defense_mw,
 
       # Data quality flag. "complete" means both windows have enough valid
       # seasons; the partials are surfaced so downstream filtering can be
@@ -356,15 +357,15 @@ qa_report <- function(df) {
 
 main <- function(paths) {
   inp <- load_inputs(paths)
-  result <- compute_mis(inp$events, inp$epm)
+  result <- compute_mis(inp$events, inp$impact)
   qa_report(result)
 
   out_cols <- c(
     "event_id", "player_name", "contract_start_season", "contract_years",
     "treatment_category", "contract_type",
-    "pre_epm_overall_mw", "pre_epm_offense_mw", "pre_epm_defense_mw",
+    "pre_impact_overall_mw", "pre_impact_offense_mw", "pre_impact_defense_mw",
     "pre_total_minutes", "pre_seasons_valid",
-    "post_epm_overall_mw", "post_epm_offense_mw", "post_epm_defense_mw",
+    "post_impact_overall_mw", "post_impact_offense_mw", "post_impact_defense_mw",
     "post_total_minutes", "post_seasons_valid", "post_minutes_per_season",
     "mis_overall", "mis_offense", "mis_defense", "mis_data_quality"
   )
@@ -383,7 +384,7 @@ if (sys.nframe() == 0) {
 # ------------------------------------------------------------------------------
 # Formula choices - change these here, not in scattered call sites.
 #
-# The default MIS = mw_mean_post_EPM - mw_mean_pre_EPM is the simplest
+# The default MIS = mw_mean_post_impact - mw_mean_pre_impact is the simplest
 # defensible formulation and matches the research question directly. If
 # methodology evolves, places to revise:
 #
