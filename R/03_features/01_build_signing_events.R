@@ -47,6 +47,10 @@ suppressPackageStartupMessages({
   library(lubridate)
 })
 
+if (file.exists("R/03_features/fetch_player_metadata.R")) {
+  source("R/03_features/fetch_player_metadata.R")
+}
+
 # ------------------------------------------------------------------------------
 # Config
 # ------------------------------------------------------------------------------
@@ -176,22 +180,21 @@ fetch_contracts_for_season <- function(season, raw_dir) {
 }
 
 # Return: data frame with columns
-#   player_name (chr), birth_date (Date), draft_year (int),
-#   primary_position (chr in {"PG","SG","SF","PF","C"}),
+#   player_name (chr), signing_year (int), birth_date (Date), draft_year (int),
+#   primary_position (chr in {"G","F","C"}),
 #   first_nba_season (chr "YYYY-YY"),
 #   active_seasons (list of chr vectors, each a season label where the player
-#                   appeared in >= 1 NBA game)
+#                   appeared in >= 1 NBA season payload),
+#   resolution_status (chr) and optional diagnostic fields.
 #
-# Source: hoopR. Relevant functions (verify exact names against installed hoopR
-# version): nba_commonplayerinfo() for bio fields; nba_playerseasontotals()
-# aggregated per player gives the active_seasons list. For players whose first
-# NBA game came in a different year than their draft (international stash,
-# G-League starts), first_nba_season takes precedence over draft_year for YOS.
-fetch_player_metadata <- function(player_names) {
-  stop("fetch_player_metadata() not implemented. ",
-       "TODO: query hoopR commonplayerinfo + per-season totals for ",
-       length(player_names), " players. ",
-       "Return tibble per the column contract in the function docstring.")
+# Source: implemented in R/03_features/fetch_player_metadata.R. This fallback
+# remains to keep failures explicit if the source file is missing.
+if (!exists("fetch_player_metadata")) {
+  fetch_player_metadata <- function(player_names_with_year, raw_dir) {
+    stop("fetch_player_metadata() requires R/03_features/fetch_player_metadata.R ",
+         "to be present and sourced. Input must include player_name + signing_year.",
+         call. = FALSE)
+  }
 }
 
 # Return: data frame with columns
@@ -315,11 +318,20 @@ build_signing_events <- function(contracts, player_meta, season_rosters,
   # 2. Resolve prior_team from prior-season rosters.
   evt <- resolve_prior_team(evt, season_rosters)
 
-  # 3. Join player metadata for YOS, age, position.
-  meta_joined <- evt %>%
-    left_join(player_meta %>% select(player_name, birth_date, primary_position,
-                                     active_seasons),
-              by = "player_name") %>%
+  # 3. Join player metadata for YOS, age, position. Prefer a year-aware join if
+  # signing_year is present in metadata output.
+  join_cols <- c("player_name", "birth_date", "primary_position",
+                 "active_seasons", "resolution_status")
+  has_signing_year <- "signing_year" %in% names(player_meta)
+  meta_sel <- player_meta %>% select(any_of(c(join_cols, "signing_year")))
+  meta_joined <- if (has_signing_year) {
+    evt %>%
+      left_join(meta_sel,
+                by = c("player_name", "signing_offseason_year" = "signing_year"))
+  } else {
+    evt %>% left_join(meta_sel, by = "player_name")
+  }
+  meta_joined <- meta_joined %>%
     rowwise() %>%
     mutate(
       years_of_service = compute_years_of_service(active_seasons,
@@ -394,9 +406,15 @@ main <- function(paths) {
   contracts <- map_dfr(STUDY_SEASONS,
                        ~ fetch_contracts_for_season(.x, paths$raw_dir))
 
-  player_names_needed <- unique(contracts$player_name)
-  message("Fetching metadata for ", length(player_names_needed), " players...")
-  player_meta <- fetch_player_metadata(player_names_needed)
+  contracts_with_year <- contracts %>%
+    transmute(
+      player_name,
+      signing_year = infer_signing_offseason_year(signing_date)
+    ) %>%
+    distinct()
+  message("Fetching metadata for ", nrow(contracts_with_year),
+          " player-season requests...")
+  player_meta <- fetch_player_metadata(contracts_with_year, paths$raw_dir)
 
   seasons_needed <- unique(c(STUDY_SEASONS,
                              make_season_label(season_start_year(STUDY_SEASONS) - 1L)))
