@@ -2,6 +2,7 @@ const TOOL_SUITE_ROOT = "/nba-research-project/";
 
 const pages = [
   { href: "index.html", label: "Welcome" },
+  { href: "research-question.html", label: "Research Question" },
   { href: "findings.html", label: "Key Findings" },
   { href: "overview.html", label: "Overview" },
   { href: "team.html", label: "Team" },

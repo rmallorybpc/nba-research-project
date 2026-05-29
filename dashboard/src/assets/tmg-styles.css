@@ -363,6 +363,70 @@ body {
   color: var(--tmg-sage-hover);
 }
 
+.tmg-prose {
+  max-width: 78ch;
+}
+
+.tmg-prose h2,
+.tmg-prose h3,
+.tmg-prose h4 {
+  color: var(--tmg-charcoal);
+  line-height: 1.35;
+  margin-top: 28px;
+  margin-bottom: 12px;
+}
+
+.tmg-prose h2 {
+  font-size: 22px;
+}
+
+.tmg-prose h3 {
+  font-size: 18px;
+}
+
+.tmg-prose p {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.tmg-prose p + p {
+  margin-top: 14px;
+}
+
+.tmg-prose ul,
+.tmg-prose ol {
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.tmg-prose p + ul,
+.tmg-prose p + ol,
+.tmg-prose ul + p,
+.tmg-prose ol + p,
+.tmg-prose ul + ul,
+.tmg-prose ol + ol,
+.tmg-prose ul + ol,
+.tmg-prose ol + ul {
+  margin-top: 14px;
+}
+
+.tmg-prose li + li {
+  margin-top: 8px;
+}
+
+.tmg-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.94em;
+  background: rgba(132, 169, 140, 0.14);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.tmg-prose strong {
+  font-weight: 600;
+}
+
 @media (max-width: 720px) {
   .tmg-nav {
     padding: 0 12px;
@@ -387,5 +451,17 @@ body {
   .tmg-dropdown-btn {
     padding: 6px 10px;
     white-space: nowrap;
+  }
+
+  .tmg-prose {
+    max-width: 100%;
+  }
+
+  .tmg-prose h2 {
+    font-size: 20px;
+  }
+
+  .tmg-prose h3 {
+    font-size: 17px;
   }
 }
