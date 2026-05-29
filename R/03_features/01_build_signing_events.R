@@ -47,16 +47,13 @@ suppressPackageStartupMessages({
   library(lubridate)
 })
 
-if (file.exists("R/03_features/fetch_player_metadata.R")) {
-  source("R/03_features/fetch_player_metadata.R")
-}
-
 # ------------------------------------------------------------------------------
 # Config
 # ------------------------------------------------------------------------------
 
 paths <- list(
   thresholds = "data/processed/cba_thresholds.csv",
+  extensions = "data/processed/nba_extensions.csv",
   raw_dir    = "data/raw",
   out        = "data/processed/signing_events.csv"
 )
@@ -179,22 +176,65 @@ fetch_contracts_for_season <- function(season, raw_dir) {
        "override this stub.", call. = FALSE)
 }
 
+# Return: data frame with the same shape as fetch_contracts_for_season()
+# but containing veteran extensions and renegotiations.
+#
+# Source: curated local extract built from Spotrac extension tracker cross-
+# checked against Basketball Reference transactions. Keep this as a separate
+# feed so UFA and extension scrapers can evolve independently.
+fetch_extensions <- function(path, seasons) {
+  if (!file.exists(path)) {
+    warning("Extensions file not found at ", path,
+            "; proceeding with UFA-only contracts.")
+    return(tibble(
+      player_name = character(),
+      signing_date = as.Date(character()),
+      signing_team = character(),
+      contract_start_season = character(),
+      total_value = numeric(),
+      contract_years = integer(),
+      kind = character()
+    ))
+  }
+
+  ext <- read_csv(path, show_col_types = FALSE)
+  needed <- c("player_name", "signing_date", "signing_team",
+              "contract_start_season", "total_value", "contract_years", "kind")
+  missing <- setdiff(needed, names(ext))
+  if (length(missing) > 0) {
+    stop("Extensions file is missing required columns: ",
+         paste(missing, collapse = ", "), call. = FALSE)
+  }
+
+  ext %>%
+    mutate(signing_date = as.Date(signing_date)) %>%
+    filter(contract_start_season %in% seasons |
+             infer_signing_offseason_year(signing_date) %in%
+               season_start_year(seasons)) %>%
+    select(any_of(needed))
+}
+
 # Return: data frame with columns
-#   player_name (chr), signing_year (int), birth_date (Date), draft_year (int),
-#   primary_position (chr in {"G","F","C"}),
+#   player_name (chr), birth_date (Date), draft_year (int),
+#   primary_position (chr in {"PG","SG","SF","PF","C"}),
 #   first_nba_season (chr "YYYY-YY"),
 #   active_seasons (list of chr vectors, each a season label where the player
-#                   appeared in >= 1 NBA season payload),
-#   resolution_status (chr) and optional diagnostic fields.
+#                   appeared in >= 1 NBA game)
 #
-# Source: implemented in R/03_features/fetch_player_metadata.R. This fallback
-# remains to keep failures explicit if the source file is missing.
-if (!exists("fetch_player_metadata")) {
-  fetch_player_metadata <- function(player_names_with_year, raw_dir) {
-    stop("fetch_player_metadata() requires R/03_features/fetch_player_metadata.R ",
-         "to be present and sourced. Input must include player_name + signing_year.",
-         call. = FALSE)
-  }
+# Source: hoopR. Relevant functions (verify exact names against installed hoopR
+# version): nba_commonplayerinfo() for bio fields; nba_playerseasontotals()
+# aggregated per player gives the active_seasons list. For players whose first
+# NBA game came in a different year than their draft (international stash,
+# G-League starts), first_nba_season takes precedence over draft_year for YOS.
+fetch_player_metadata <- function(player_names_with_year, raw_dir) {
+  # Implementation lives in R/01_ingest/fetch_player_metadata.R — sourced
+  # below. Note: the real signature takes a tibble (player_name, signing_year),
+  # not just a name vector — needed for collision resolution against career
+  # windows when multiple historical players share a name.
+  stop("fetch_player_metadata() requires fetch_player_metadata.R to be sourced. ",
+       "Add `source('R/01_ingest/fetch_player_metadata.R')` near the top of ",
+       "this file (after the library loads) and that file's definition will ",
+       "override this stub.", call. = FALSE)
 }
 
 # Return: data frame with columns
@@ -205,13 +245,28 @@ if (!exists("fetch_player_metadata")) {
 # logged the most games for in that season (handles mid-season trades by
 # picking the team they ended with most minutes/games). Used by
 # resolve_prior_team() below to determine where a free agent came from.
-fetch_season_rosters <- function(seasons) {
-  stop("fetch_season_rosters() not implemented. ",
-       "TODO: load season rosters from hoopR for: ",
-       paste(seasons, collapse = ", "), ". ",
-       "Aggregate to one row per (season, player) with the primary team. ",
-       "Return tibble per the column contract in the function docstring.")
+fetch_season_rosters <- function(seasons, raw_dir) {
+  # Implementation lives in R/01_ingest/fetch_season_rosters.R — sourced
+  # below. Note: the real implementation defines primary_team as the team of
+  # the player's LAST regular-season game played (i.e. the team that held
+  # their rights at season's end), not the modal team across the season. This
+  # is the correct definition for prior-team resolution — a player traded at
+  # the deadline still has the receiving team as their prior_team.
+  stop("fetch_season_rosters() requires fetch_season_rosters.R to be sourced. ",
+       "Add `source('R/01_ingest/fetch_season_rosters.R')` near the top of ",
+       "this file (after the library loads) and that file's definition will ",
+       "override this stub.", call. = FALSE)
 }
+
+# Load local helper implementations when present. These override stubs above.
+helper_sources <- c(
+  "R/01_ingest/fetch_contracts.R",
+  "R/01_ingest/fetch_season_rosters.R",
+  "R/03_features/fetch_player_metadata.R"
+)
+walk(helper_sources, function(p) {
+  if (file.exists(p)) source(p)
+})
 
 # ------------------------------------------------------------------------------
 # Derivations
@@ -318,20 +373,11 @@ build_signing_events <- function(contracts, player_meta, season_rosters,
   # 2. Resolve prior_team from prior-season rosters.
   evt <- resolve_prior_team(evt, season_rosters)
 
-  # 3. Join player metadata for YOS, age, position. Prefer a year-aware join if
-  # signing_year is present in metadata output.
-  join_cols <- c("player_name", "birth_date", "primary_position",
-                 "active_seasons", "resolution_status")
-  has_signing_year <- "signing_year" %in% names(player_meta)
-  meta_sel <- player_meta %>% select(any_of(c(join_cols, "signing_year")))
-  meta_joined <- if (has_signing_year) {
-    evt %>%
-      left_join(meta_sel,
-                by = c("player_name", "signing_offseason_year" = "signing_year"))
-  } else {
-    evt %>% left_join(meta_sel, by = "player_name")
-  }
-  meta_joined <- meta_joined %>%
+  # 3. Join player metadata for YOS, age, position.
+  meta_joined <- evt %>%
+    left_join(player_meta %>% select(player_name, birth_date, primary_position,
+                                     active_seasons),
+              by = "player_name") %>%
     rowwise() %>%
     mutate(
       years_of_service = compute_years_of_service(active_seasons,
@@ -403,23 +449,32 @@ main <- function(paths) {
   thresholds <- read_csv(paths$thresholds, show_col_types = FALSE)
 
   message("Fetching contracts for ", length(STUDY_SEASONS), " seasons...")
-  contracts <- map_dfr(STUDY_SEASONS,
+  ufa_contracts <- map_dfr(STUDY_SEASONS,
                        ~ fetch_contracts_for_season(.x, paths$raw_dir))
 
-  contracts_with_year <- contracts %>%
-    transmute(
-      player_name,
-      signing_year = infer_signing_offseason_year(signing_date)
-    ) %>%
-    distinct()
-  message("Fetching metadata for ", nrow(contracts_with_year),
-          " player-season requests...")
-  player_meta <- fetch_player_metadata(contracts_with_year, paths$raw_dir)
+  message("Loading curated extensions...")
+  extensions <- fetch_extensions(path = paths$extensions,
+                                 seasons = STUDY_SEASONS)
+
+  # Union the two sources. The extensions loader emits the same column shape
+  # as fetch_contracts_for_season(); bind_rows handles missing extras gracefully.
+  contracts <- bind_rows(ufa_contracts, extensions)
+  message("  combined: ", nrow(ufa_contracts), " UFA + ",
+          nrow(extensions), " extensions = ", nrow(contracts), " total")
+
+  # Build the (player_name, signing_year) tibble the player-metadata fetcher
+  # now requires for collision resolution against career windows.
+  player_lookups <- contracts %>%
+    mutate(signing_year = as.integer(format(signing_date, "%Y"))) %>%
+    distinct(player_name, signing_year)
+  message("Fetching metadata for ", nrow(player_lookups),
+          " unique (player, signing_year) pairs...")
+  player_meta <- fetch_player_metadata(player_lookups, paths$raw_dir)
 
   seasons_needed <- unique(c(STUDY_SEASONS,
                              make_season_label(season_start_year(STUDY_SEASONS) - 1L)))
   message("Fetching rosters for ", length(seasons_needed), " seasons...")
-  season_rosters <- fetch_season_rosters(seasons_needed)
+  season_rosters <- fetch_season_rosters(seasons_needed, paths$raw_dir)
 
   events <- build_signing_events(contracts, player_meta, season_rosters,
                                  thresholds)
