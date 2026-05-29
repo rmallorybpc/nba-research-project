@@ -265,7 +265,18 @@ helper_sources <- c(
   "R/03_features/fetch_player_metadata.R"
 )
 walk(helper_sources, function(p) {
-  if (file.exists(p)) source(p)
+  if (!file.exists(p)) return(invisible(NULL))
+
+  # Keep scaffold mode usable when optional scrape dependencies (for example
+  # rvest/hoopR) are not installed in the current environment.
+  tryCatch(
+    source(p),
+    error = function(e) {
+      warning("Could not source ", p, ": ", conditionMessage(e),
+              "\nUsing local stub implementation where available.",
+              call. = FALSE)
+    }
+  )
 })
 
 # ------------------------------------------------------------------------------
