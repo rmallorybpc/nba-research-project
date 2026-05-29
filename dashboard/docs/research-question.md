@@ -26,7 +26,7 @@ Each contract decision is sorted into one of three treatment groups:
 - Re-signed on a standard deal: stayed with the incumbent team on any non-supermax contract.
 - Changed teams: signed with a different team as an unrestricted free agent.
 
-Performance is measured with Estimated Plus-Minus (EPM), a modern impact metric that separates offensive and defensive contribution. The study window spans nine seasons from 2016-17 through 2024-25, covering both the post-television-deal cap environment and the player-empowerment era.
+Performance is measured with Box Plus-Minus (BPM), a publicly available impact metric from Basketball Reference that decomposes into offensive (OBPM) and defensive (DBPM) components. This lets the analysis show not just whether a re-signed player declines but where the decline appears.
 
 Contract types are classified with published CBA thresholds, including the 25%, 30%, and 35% maximum-salary tiers by years of service and supermax eligibility rules.
 
