@@ -106,7 +106,9 @@ fetch_with_cache <- function(url, cache_path,
 
   if (use_cache && file.exists(cache_path)) {
     message("  [cache] ", basename(cache_path))
-    return(read_html(cache_path))
+    html_text <- rawToChar(readBin(cache_path, what = "raw", n = file.info(cache_path)$size))
+    html_text <- gsub("<!--|-->", "", html_text)
+    return(read_html(html_text))
   }
   dir.create(dirname(cache_path), showWarnings = FALSE, recursive = TRUE)
 
@@ -124,8 +126,11 @@ fetch_with_cache <- function(url, cache_path,
   if (status != 200) {
     stop("HTTP ", status, " from ", url, call. = FALSE)
   }
-  writeBin(content(resp, as = "raw"), cache_path)
-  read_html(cache_path)
+  raw_html <- content(resp, as = "raw")
+  writeBin(raw_html, cache_path)
+  html_text <- rawToChar(raw_html)
+  html_text <- gsub("<!--|-->", "", html_text)
+  read_html(html_text)
 }
 
 # ------------------------------------------------------------------------------
