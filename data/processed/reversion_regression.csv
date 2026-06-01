@@ -1,0 +1,2 @@
+model,term,estimate,std.error,statistic,p.value,conf.low,conf.high,n_obs,r_squared
+mis_overall ~ pre_impact + season_FE,pre_impact_overall_mw,-0.2494193894981285,0.013155686928962072,-18.959054806103282,9.64198054789746e-75,-0.2752172425425787,-0.22362153645367835,2378,0.13477179043939055
