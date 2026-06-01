@@ -1,0 +1,5 @@
+{
+  "name": "nba-research-project R",
+  "image": "ghcr.io/rocker-org/devcontainer/tidyverse:4",
+  "postCreateCommand": "Rscript -e 'install.packages(c(\"fixest\",\"sandwich\",\"lmtest\",\"broom\"), repos=\"https://cloud.r-project.org\"); if (!requireNamespace(\"pak\", quietly=TRUE)) install.packages(\"pak\", repos=\"https://cloud.r-project.org\"); pak::pak(\"sportsdataverse/hoopR\")'"
+}
