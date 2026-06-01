@@ -228,6 +228,7 @@ fetch_one_season_impact <- function(season, raw_dir,
   player_col  <- col("^Player$")
   team_col    <- col("^Tm$|^Team$")
   g_col       <- col("^G$|^Games$")
+  age_col     <- col("^Age$")
   mp_col      <- col("^MP$|Minutes")
   bpm_col     <- col("^BPM$")
   obpm_col    <- col("^OBPM$")
@@ -243,6 +244,7 @@ fetch_one_season_impact <- function(season, raw_dir,
     impact_defense   = suppressWarnings(as.numeric(agg[[dbpm_col]])),
     minutes_played   = suppressWarnings(as.integer(agg[[mp_col]])),
     games_played     = suppressWarnings(as.integer(agg[[g_col]])),
+    age              = suppressWarnings(as.integer(agg[[age_col]])),
     metric_source    = "bpm_basketball_reference"
   )
 
