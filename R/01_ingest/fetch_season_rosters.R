@@ -208,7 +208,10 @@ derive_primary_team <- function(box, season_label) {
       games_played = as.integer(.data$games_played),
       mid_season_trade = .data$n_teams > 1,
       last_game_date   = .data$last_game_date
-    )
+    ) %>%
+    group_by(.data$season, .data$name_norm) %>%
+    slice_max(.data$games_played, n = 1, with_ties = FALSE) %>%
+    ungroup()
 }
 
 # ------------------------------------------------------------------------------
