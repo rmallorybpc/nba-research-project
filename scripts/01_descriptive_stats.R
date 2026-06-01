@@ -168,8 +168,8 @@ print_report <- function(counts, groups, by_season) {
       pull(mean_mis_overall)
     others <- groups %>% filter(treatment_category != "re_signed_supermax")
     if (all(sm < others$mean_mis_overall, na.rm = TRUE)) {
-      message("\n  Headline check: supermax cohort has the MOST NEGATIVE ",
-              "mean MIS — consistent with the supermax-reset hypothesis.")
+      message("Note: the supermax cohort shows the most negative RAW mean MIS.")
+      message("This is unadjusted. The regression in 03_supermax_reset_model.R controls for age and prior impact and finds no supermax effect. Do not read these raw means as support for the hypothesis.")
     } else {
       message("\n  Headline check: supermax cohort is NOT the most negative — ",
               "the simple-means picture does not support the hypothesis.")
