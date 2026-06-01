@@ -56,6 +56,9 @@ suppressPackageStartupMessages({
 # ------------------------------------------------------------------------------
 
 DEFAULT_BOX_THROTTLE_SECONDS <- 2
+NBA_TEAMS <- c("ATL","BKN","BOS","CHA","CHI","CLE","DAL","DEN","DET","GSW",
+               "HOU","IND","LAC","LAL","MEM","MIA","MIL","MIN","NOP","NYK",
+               "OKC","ORL","PHI","PHX","POR","SAC","SAS","TOR","UTA","WAS")
 
 # ------------------------------------------------------------------------------
 # Helpers
@@ -73,10 +76,10 @@ normalize_player_name <- function(x) {
     str_squish()
 }
 
-# hoopR's load_nba_player_box() takes seasons as integer START years. Our
+# hoopR's load_nba_player_box() takes seasons as integer ENDING years. Our
 # pipeline uses "YYYY-YY" strings. Convert.
 season_label_to_start_year <- function(season) {
-  as.integer(str_sub(season, 1, 4))
+  as.integer(substr(season, 1, 4)) + 1L
 }
 
 # Inverse, for reporting.
@@ -186,6 +189,7 @@ derive_primary_team <- function(box, season_label) {
       team_norm = vapply(.data$team_abbreviation,
                          normalize_team_abbrev, character(1))
     ) %>%
+    filter(.data$team_norm %in% NBA_TEAMS) %>%
     group_by(.data$athlete_id, .data$athlete_display_name) %>%
     arrange(.data$game_date, .by_group = TRUE) %>%
     summarise(
@@ -249,8 +253,8 @@ fetch_season_rosters <- function(seasons, raw_dir,
 
 if (FALSE) {
   # Season label conversion
-  stopifnot(season_label_to_start_year("2024-25") == 2024L)
-  stopifnot(season_label_to_start_year("1999-00") == 1999L)
+  stopifnot(season_label_to_start_year("2024-25") == 2025L)
+  stopifnot(season_label_to_start_year("1999-00") == 2000L)
   stopifnot(start_year_to_season_label(2024) == "2024-25")
   stopifnot(start_year_to_season_label(1999) == "1999-00")
 
