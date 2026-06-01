@@ -78,7 +78,9 @@ fetch_with_cache <- function(url, cache_path,
 
   if (use_cache && file.exists(cache_path)) {
     message("  [cache] ", basename(cache_path))
-    return(read_html(cache_path))
+    html_text <- rawToChar(readBin(cache_path, what = "raw", n = file.info(cache_path)$size))
+    html_text <- gsub("<!--|-->", "", html_text)
+    return(read_html(html_text))
   }
 
   dir.create(dirname(cache_path), showWarnings = FALSE, recursive = TRUE)
@@ -104,8 +106,13 @@ fetch_with_cache <- function(url, cache_path,
   }
 
   # Persist the raw HTML before parsing, so a parser bug never costs a refetch.
-  writeBin(content(resp, as = "raw"), cache_path)
-  read_html(cache_path)
+  raw_html <- content(resp, as = "raw")
+  writeBin(raw_html, cache_path)
+
+  # BBRef often wraps data tables in HTML comments; strip markers before parse.
+  html_text <- rawToChar(raw_html)
+  html_text <- gsub("<!--|-->", "", html_text)
+  read_html(html_text)
 }
 
 # ------------------------------------------------------------------------------
@@ -113,22 +120,12 @@ fetch_with_cache <- function(url, cache_path,
 # BBRef changes column positions occasionally; column LABELS are stable.
 # ------------------------------------------------------------------------------
 
-# Extract the free-agent table from a parsed BBRef page. The table on this
-# page has stable id "free_agents" historically; we fall back to grabbing the
-# first <table> that contains a Player column, in case the id changes.
+# Extract the free-agent player table from a parsed BBRef page.
 extract_fa_table <- function(html) {
-  tbl <- html %>% html_element("#free_agents")
+  tbl <- html %>% html_element("#players")
   if (inherits(tbl, "xml_missing")) {
-    # Fallback: scan all tables for one with a Player header.
-    candidates <- html %>% html_elements("table")
-    for (t in candidates) {
-      headers <- t %>% html_elements("thead th") %>% html_text2()
-      if (any(str_detect(headers, regex("Player", ignore_case = TRUE)))) {
-        return(html_table(t, header = TRUE))
-      }
-    }
     stop("Could not locate the free-agents table on the BBRef page. ",
-         "Inspect the cached HTML to confirm the table id or class.",
+         "Expected table id '#players' was not found.",
          call. = FALSE)
   }
   html_table(tbl, header = TRUE)
