@@ -64,7 +64,6 @@ team_portfolio <- function(df) {
                                      na.rm = TRUE),
       n_new_team              = sum(treatment_category == "new_team",
                                      na.rm = TRUE),
-      total_value_signed      = sum(total_value, na.rm = TRUE),
       .groups = "drop"
     )
 
@@ -104,7 +103,6 @@ team_detail <- function(df) {
       treatment_category,
       contract_type,
       contract_years,
-      total_value,
       mis_overall,
       mis_data_quality
     ) %>%
@@ -137,7 +135,7 @@ print_report <- function(portfolio) {
                   "team", "n", "mean_MIS", "sum_MIS", "pct_positive"))
   ranked %>% head(5) %>%
     pwalk(function(signing_team, n_signings_total, n_supermax,
-                   n_re_signed_standard, n_new_team, total_value_signed,
+                   n_re_signed_standard, n_new_team,
                    n_complete, mean_mis_overall, sum_mis_overall,
                    mean_mis_offense, mean_mis_defense, pct_positive_mis,
                    best_mis, worst_mis) {
@@ -152,7 +150,7 @@ print_report <- function(portfolio) {
                   "team", "n", "mean_MIS", "sum_MIS", "pct_positive"))
   ranked %>% tail(5) %>% arrange(mean_mis_overall) %>%
     pwalk(function(signing_team, n_signings_total, n_supermax,
-                   n_re_signed_standard, n_new_team, total_value_signed,
+                   n_re_signed_standard, n_new_team,
                    n_complete, mean_mis_overall, sum_mis_overall,
                    mean_mis_offense, mean_mis_defense, pct_positive_mis,
                    best_mis, worst_mis) {
@@ -170,7 +168,7 @@ print_report <- function(portfolio) {
     message(sprintf("  %-5s %-10s %s", "team", "n_supermax", "mean_MIS"))
     sm_heavy %>%
       pwalk(function(signing_team, n_signings_total, n_supermax,
-                     n_re_signed_standard, n_new_team, total_value_signed,
+                     n_re_signed_standard, n_new_team,
                      n_complete, mean_mis_overall, sum_mis_overall,
                      mean_mis_offense, mean_mis_defense, pct_positive_mis,
                      best_mis, worst_mis) {
