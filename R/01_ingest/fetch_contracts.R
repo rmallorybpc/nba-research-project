@@ -1,7 +1,7 @@
 # ============================================================================== 
 # fetch_contracts.R
 #
-# Purpose : Implementation of fetch_contracts_for_season() - the first of the
+# Purpose : Implementation of fetch_contracts_for_season() — the first of the
 #           three data-source fetchers that 01_build_signing_events.R relies on.
 #           Pulls per-season UFA signings from Basketball Reference's
 #           free-agent tracker page, with rate limiting, response caching, and a
@@ -10,13 +10,13 @@
 # Primary source : basketball-reference.com/friv/free_agents.cgi?year={YYYY}
 #                  Stable URL pattern, single table per season, fact-only data.
 #                  Sports Reference rate limit: 20 requests/minute on
-#                  basketball-reference.com - research-scale (9 pages total)
+#                  basketball-reference.com — research-scale (9 pages total)
 #                  stays comfortably below it with the throttle below.
 #
 # Scope    : UFA signings only. Veteran extensions do NOT appear on this page
 #            because they were not "free agents" the summer they signed (their
 #            existing contracts were still in force). Extensions are handled in
-#            a separate fetch step - see fetch_extensions.R.
+#            a separate fetch step — see fetch_extensions.R (TODO).
 #
 # View-source vs rendered : rvest::read_html() parses the raw HTTP response
 #            (what you would see in "View Page Source"), NOT the JavaScript-
@@ -25,8 +25,8 @@
 #            behind JS, fetch_with_cache() will need to be replaced with a
 #            headless-browser approach (chromote / selenider).
 #
-# Compliance : Sports Reference allows fact reuse - "facts cannot be
-#              copyrighted" per their own data-use page - but prohibits bulk
+# Compliance : Sports Reference allows fact reuse — "facts cannot be
+#              copyrighted" per their own data-use page — but prohibits bulk
 #              automated access that adversely impacts site performance, and
 #              prohibits redistribution that competes with their service. This
 #              code respects both: rate-limited well below their 20/min cap,
@@ -43,7 +43,6 @@ suppressPackageStartupMessages({
   library(rvest)
   library(httr)
   library(tibble)
-  library(purrr)
 })
 
 # ------------------------------------------------------------------------------
@@ -54,21 +53,21 @@ BBREF_FREE_AGENTS_URL <- "https://www.basketball-reference.com/friv/free_agents.
 
 # Polite User-Agent that identifies the project, why it's hitting their server,
 # and how to contact us if they want to ask us to stop. This is what an ethical
-# scraper looks like - anonymity is the wrong signal here.
+# scraper looks like — anonymity is the wrong signal here.
 USER_AGENT_STRING <- paste0(
   "nba-research-project/0.1 ",
   "(behavioral-economics research; ",
   "contact: github.com/rmallorybpc/nba-research-project)"
 )
 
-# Sleep between requests in seconds. BBRef's documented limit is 20/min - at 3
+# Sleep between requests in seconds. BBRef's documented limit is 20/min — at 3
 # seconds we do at most 20/min. We use a little more headroom to be safe.
 DEFAULT_THROTTLE_SECONDS <- 3.5
 
 # ------------------------------------------------------------------------------
 # Cached fetch
 # Always check cache before hitting the network. The raw HTML response is the
-# unit of caching - once we have the HTML, re-parsing is free, so a parsing
+# unit of caching — once we have the HTML, re-parsing is free, so a parsing
 # change does not trigger a re-fetch.
 # ------------------------------------------------------------------------------
 
@@ -110,12 +109,9 @@ fetch_with_cache <- function(url, cache_path,
 }
 
 # ------------------------------------------------------------------------------
-# Parsing helpers - defensive, header-driven (not column-position-driven)
+# Parsing helpers — defensive, header-driven (not column-position-driven)
 # BBRef changes column positions occasionally; column LABELS are stable.
 # ------------------------------------------------------------------------------
-
-# Null-coalescing operator (R doesn't have one built in for character).
-`%||%` <- function(a, b) if (is.null(a) || length(a) == 0) b else a
 
 # Extract the free-agent table from a parsed BBRef page. The table on this
 # page has stable id "free_agents" historically; we fall back to grabbing the
@@ -173,6 +169,9 @@ parse_signing_note <- function(note) {
   )
 }
 
+# Null-coalescing operator (R doesn't have one built in for character).
+`%||%` <- function(a, b) if (is.null(a) || length(a) == 0) b else a
+
 # Map BBRef's "Type" column to our `kind` taxonomy. Anything we don't recognize
 # is conservatively tagged "ufa_signing" if signed elsewhere or "other" if not,
 # and flagged for review.
@@ -203,12 +202,12 @@ normalize_team <- function(team) {
              "NOH" = "NOP", "PHO" = "PHX")
   if (team %in% names(alias)) return(unname(alias[team]))
   warning("Unrecognized team code from BBRef: ", team,
-          " - preserving raw value.")
+          " — preserving raw value.")
   team
 }
 
 # ------------------------------------------------------------------------------
-# Main fetcher - replaces the stub in 01_build_signing_events.R
+# Main fetcher — replaces the stub in 01_build_signing_events.R
 # ------------------------------------------------------------------------------
 
 fetch_contracts_for_season <- function(season, raw_dir,
@@ -286,7 +285,7 @@ fetch_contracts_for_season <- function(season, raw_dir,
 }
 
 # ------------------------------------------------------------------------------
-# Self-test (parser only - does NOT hit the network)
+# Self-test (parser only — does NOT hit the network)
 # Run interactively to confirm the parser handles the strings BBRef emits.
 # ------------------------------------------------------------------------------
 
