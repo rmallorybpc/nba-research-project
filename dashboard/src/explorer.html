@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NBA Analysis | Explorer</title>
+    <title>NBA Analysis | All Signings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,6 +12,18 @@
     />
     <link rel="stylesheet" href="assets/tmg-styles.css" />
     <script defer src="assets/nav.js"></script>
+    <style>
+      .tmg-data-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.92rem; }
+      .tmg-data-table th, .tmg-data-table td { text-align: left; padding: 0.45rem 0.7rem; border-bottom: 1px solid rgba(45,52,54,0.12); }
+      .tmg-data-table th { font-weight: 500; color: #84A98C; cursor: pointer; position: sticky; top: 0; background: #FDFCF0; }
+      .tmg-data-table td.num, .tmg-data-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      .tmg-controls { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 0.5rem; }
+      .tmg-controls input, .tmg-controls select { font-family: inherit; font-size: 0.95rem; padding: 0.4rem 0.6rem; border: 1px solid rgba(45,52,54,0.2); border-radius: 6px; background: #fff; }
+      .tmg-scroll { max-height: 60vh; overflow-y: auto; margin-top: 0.5rem; }
+      .tmg-state { color: #84A98C; }
+      .tmg-note { font-size: 0.9rem; color: rgba(45,52,54,0.7); margin-top: 0.5rem; }
+      .tmg-count { font-size: 0.9rem; color: rgba(45,52,54,0.7); }
+    </style>
   </head>
   <body>
     <div id="tmg-nav-host"></div>
@@ -19,45 +31,87 @@
       <div class="tmg-container">
         <header class="tmg-page-header">
           <p class="tmg-eyebrow">The Mallory Group</p>
-          <h1 class="tmg-page-title">Explorer</h1>
+          <h1 class="tmg-page-title">All Signings</h1>
           <p class="tmg-page-desc">
-            Interactive exploration surface for segmented comparisons and drill-down.
+            Every contributor's stay-or-move decision across the study window, with the impact change that followed.
           </p>
         </header>
 
         <section class="tmg-bento-grid">
-          <article
-            class="tmg-card"
-            role="group"
-            aria-label="Explorer data status"
-          >
-            <p class="tmg-card-label">Pipeline status</p>
-            <h2 class="tmg-card-title">Explorer dataset readiness</h2>
-        <p>Interactive exploration placeholder.</p>
-        <p>Status: <span class="placeholder" id="status">Loading...</span></p>
+          <article class="tmg-card">
+            <p class="tmg-card-label">Browse the data</p>
+            <h2 class="tmg-card-title">Signing events</h2>
+            <div class="tmg-controls">
+              <input type="text" id="search" placeholder="Search player..." />
+              <select id="group-filter">
+                <option value="">All groups</option>
+                <option value="re_signed_supermax">Re-signed (supermax)</option>
+                <option value="re_signed_standard">Stayed (standard)</option>
+                <option value="new_team">Changed teams</option>
+              </select>
+              <span class="tmg-count" id="count"></span>
+            </div>
+            <div class="tmg-scroll"><div id="explorer-table"><p class="tmg-state">Loading...</p></div></div>
+            <p class="tmg-note">Impact change is the difference between post-signing and pre-signing Box Plus-Minus. Blank means the post-signing window is not yet complete.</p>
           </article>
         </section>
 
-        <footer class="tmg-footer">TMG Tool Suite · NBA Analysis</footer>
+        <footer class="tmg-footer">TMG Tool Suite &middot; NBA Analysis</footer>
       </div>
     </main>
+
     <script>
-      const BASE = "/nba-research-project";
-      async function loadStatus() {
-        const target = document.getElementById("status");
-        try {
-          const response = await fetch(`${BASE}/assets/data/explorer.csv`);
-          if (response.ok) {
-            const text = await response.text();
-            if (text.trim()) {
-              target.textContent = "Loaded";
-            }
+      function splitLine(line){const out=[];let cur='';let q=false;for(let i=0;i<line.length;i++){const c=line[i];if(q){if(c==='"'){if(line[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}else{if(c===','){out.push(cur);cur='';}else if(c==='"'){q=true;}else cur+=c;}}out.push(cur);return out;}
+      function parseCSV(text){const lines=text.trim().split(/\r?\n/);const headers=splitLine(lines[0]);return lines.slice(1).map(l=>{const cells=splitLine(l);const o={};headers.forEach((h,i)=>o[h]=cells[i]);return o;});}
+      async function getCSV(path){const r=await fetch(path);if(!r.ok)throw new Error(path+' -> '+r.status);return parseCSV(await r.text());}
+      const TLABEL={re_signed_supermax:'Re-signed (supermax)',re_signed_standard:'Stayed (standard)',new_team:'Changed teams'};
+      const fmt=(x,d=2)=>{const n=parseFloat(x);if(isNaN(n))return '';return (n>=0?'+':'')+n.toFixed(d);};
+
+      (async function(){
+        const host=document.getElementById('explorer-table');
+        try{
+          const [ev,mis]=await Promise.all([getCSV('data/signing_events_classified.csv'),getCSV('data/signing_events_mis.csv')]);
+          const misById={};mis.forEach(m=>{misById[m.event_id]=m;});
+          let rows=ev.map(r=>({
+            player:r.player_name, season:r.season||r.contract_start_season,
+            prior:r.prior_team, signing:r.signing_team,
+            group:r.treatment_category, age:r.age_at_signing,
+            mis:(misById[r.event_id]&&misById[r.event_id].mis_data_quality==='complete')?misById[r.event_id].mis_overall:''
+          }));
+          let sortKey='player',sortDir=1;
+          const cols=[
+            {k:'player',label:'Player',num:false},
+            {k:'season',label:'Season',num:false},
+            {k:'prior',label:'From',num:false},
+            {k:'signing',label:'To',num:false},
+            {k:'group',label:'Group',num:false,map:true},
+            {k:'age',label:'Age',num:true},
+            {k:'mis',label:'Impact change',num:true,fmt:true}
+          ];
+          function current(){
+            const q=document.getElementById('search').value.toLowerCase().trim();
+            const g=document.getElementById('group-filter').value;
+            let r=rows.filter(x=>(!q||x.player.toLowerCase().includes(q))&&(!g||x.group===g));
+            r.sort((a,b)=>{const av=a[sortKey],bv=b[sortKey];const an=parseFloat(av),bn=parseFloat(bv);if(!isNaN(an)&&!isNaN(bn))return (an-bn)*sortDir;return String(av).localeCompare(String(bv))*sortDir;});
+            return r;
           }
-        } catch (_err) {
-          // Keep placeholder text while data files are still empty/missing.
-        }
-      }
-      loadStatus();
+          function render(){
+            const r=current();
+            document.getElementById('count').textContent=r.length+' events';
+            let h='<table class="tmg-data-table"><thead><tr>';
+            cols.forEach(c=>{h+='<th class="'+(c.num?'num':'')+'" data-k="'+c.k+'">'+c.label+'</th>';});
+            h+='</tr></thead><tbody>';
+            r.slice(0,1000).forEach(x=>{h+='<tr>';cols.forEach(c=>{let v=x[c.k];if(c.map)v=TLABEL[v]||v;else if(c.fmt)v=fmt(v);h+='<td class="'+(c.num?'num':'')+'">'+(v===undefined||v===null?'':v)+'</td>';});h+='</tr>';});
+            h+='</tbody></table>';
+            if(r.length>1000)h+='<p class="tmg-note">Showing first 1000 of '+r.length+'. Filter to narrow.</p>';
+            host.innerHTML=h;
+            host.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k;if(k===sortKey)sortDir*=-1;else{sortKey=k;sortDir=1;}render();}));
+          }
+          document.getElementById('search').addEventListener('input',render);
+          document.getElementById('group-filter').addEventListener('change',render);
+          render();
+        }catch(e){host.innerHTML='<p class="tmg-note">Could not load signings data ('+e.message+').</p>';}
+      })();
     </script>
   </body>
 </html>

@@ -27,6 +27,17 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Stage data files for the site
+        run: |
+          mkdir -p dashboard/src/data
+          cp data/processed/team_portfolio.csv dashboard/src/data/
+          cp data/processed/supermax_reset_main.csv dashboard/src/data/
+          cp data/processed/supermax_reset_groupmeans.csv dashboard/src/data/
+          cp data/processed/reversion_by_quartile.csv dashboard/src/data/
+          cp data/processed/desc_mis_by_group.csv dashboard/src/data/
+          cp data/processed/signing_events_classified.csv dashboard/src/data/
+          cp data/processed/signing_events_mis.csv dashboard/src/data/
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

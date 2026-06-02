@@ -12,6 +12,15 @@
     />
     <link rel="stylesheet" href="assets/tmg-styles.css" />
     <script defer src="assets/nav.js"></script>
+    <style>
+      .tmg-controls { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 0.5rem; }
+      .tmg-controls select { font-family: inherit; font-size: 0.95rem; padding: 0.4rem 0.6rem; border: 1px solid rgba(45,52,54,0.2); border-radius: 6px; background: #fff; }
+      .tmg-readout { margin-top: 1rem; }
+      .tmg-readout .big { font-size: 2rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+      .tmg-result-line { font-size: 1.05rem; margin: 0.25rem 0; }
+      .tmg-state { color: #84A98C; }
+      .tmg-note { font-size: 0.9rem; color: rgba(45,52,54,0.7); margin-top: 0.75rem; }
+    </style>
   </head>
   <body>
     <div id="tmg-nav-host"></div>
@@ -21,39 +30,55 @@
           <p class="tmg-eyebrow">The Mallory Group</p>
           <h1 class="tmg-page-title">Sandbox</h1>
           <p class="tmg-page-desc">
-            Experimental workspace for testing transformations and analysis ideas.
+            See the mean-reversion pattern for yourself. Pick where a player stood before signing.
           </p>
         </header>
 
         <section class="tmg-bento-grid">
-          <article class="tmg-card" role="group" aria-label="Sandbox data status">
-            <p class="tmg-card-label">Pipeline status</p>
-            <h2 class="tmg-card-title">Sandbox dataset readiness</h2>
-        <p>Experimental analysis area placeholder.</p>
-        <p>Status: <span class="placeholder" id="status">Loading...</span></p>
+          <article class="tmg-card">
+            <p class="tmg-card-label">Mean reversion explorer</p>
+            <h2 class="tmg-card-title">What happens after a player signs?</h2>
+            <div class="tmg-controls">
+              <label for="quartile">Pre-signing performance:</label>
+              <select id="quartile"></select>
+            </div>
+            <div class="tmg-readout" id="readout"><p class="tmg-state">Loading...</p></div>
+            <p class="tmg-note">This is the strongest result in the study. The higher a player performed before signing, the more they declined afterward. The lower they performed, the more they bounced back. Supermax players sit in the top group, which is why their raw decline looks large. It is regression to the mean, not the contract.</p>
           </article>
         </section>
 
-        <footer class="tmg-footer">TMG Tool Suite · NBA Analysis</footer>
+        <footer class="tmg-footer">TMG Tool Suite &middot; NBA Analysis</footer>
       </div>
     </main>
+
     <script>
-      const BASE = "/nba-research-project";
-      async function loadStatus() {
-        const target = document.getElementById("status");
-        try {
-          const response = await fetch(`${BASE}/assets/data/sandbox.csv`);
-          if (response.ok) {
-            const text = await response.text();
-            if (text.trim()) {
-              target.textContent = "Loaded";
-            }
+      function splitLine(line){const out=[];let cur='';let q=false;for(let i=0;i<line.length;i++){const c=line[i];if(q){if(c==='"'){if(line[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}else{if(c===','){out.push(cur);cur='';}else if(c==='"'){q=true;}else cur+=c;}}out.push(cur);return out;}
+      function parseCSV(text){const lines=text.trim().split(/\r?\n/);const headers=splitLine(lines[0]);return lines.slice(1).map(l=>{const cells=splitLine(l);const o={};headers.forEach((h,i)=>o[h]=cells[i]);return o;});}
+      async function getCSV(path){const r=await fetch(path);if(!r.ok)throw new Error(path+' -> '+r.status);return parseCSV(await r.text());}
+      const fmt=(x,d=2)=>{const n=parseFloat(x);if(isNaN(n))return '-';return (n>=0?'+':'')+n.toFixed(d);};
+      const QLABEL={1:'Bottom quarter (weakest seasons)',2:'Second quarter',3:'Third quarter',4:'Top quarter (best seasons)'};
+
+      (async function(){
+        const readout=document.getElementById('readout');
+        try{
+          const q=(await getCSV('data/reversion_by_quartile.csv')).sort((a,b)=>parseInt(a.pre_impact_quartile)-parseInt(b.pre_impact_quartile));
+          const sel=document.getElementById('quartile');
+          q.forEach(r=>{const o=document.createElement('option');o.value=r.pre_impact_quartile;o.textContent=QLABEL[r.pre_impact_quartile]||('Q'+r.pre_impact_quartile);sel.appendChild(o);});
+          sel.value='4';
+          function render(){
+            const r=q.find(x=>x.pre_impact_quartile===sel.value);
+            const change=parseFloat(r.mean_mis_overall);
+            const pct=Math.round(parseFloat(r.pct_negative)*100);
+            let h='<p class="big">'+fmt(r.mean_mis_overall)+'</p>';
+            h+='<p class="tmg-result-line">average impact change after signing</p>';
+            h+='<p class="tmg-result-line">'+pct+'% of these players declined.</p>';
+            h+='<p class="tmg-result-line">'+(change<0?'On average, players this strong got worse.':'On average, players this group improved.')+'</p>';
+            readout.innerHTML=h;
           }
-        } catch (_err) {
-          // Keep placeholder text while data files are still empty/missing.
-        }
-      }
-      loadStatus();
+          sel.addEventListener('change',render);
+          render();
+        }catch(e){readout.innerHTML='<p class="tmg-note">Could not load reversion data ('+e.message+').</p>';}
+      })();
     </script>
   </body>
 </html>

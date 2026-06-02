@@ -12,6 +12,14 @@
     />
     <link rel="stylesheet" href="assets/tmg-styles.css" />
     <script defer src="assets/nav.js"></script>
+    <style>
+      .tmg-data-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.95rem; }
+      .tmg-data-table th, .tmg-data-table td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(45,52,54,0.12); }
+      .tmg-data-table th { font-weight: 500; color: #84A98C; cursor: pointer; }
+      .tmg-data-table td.num, .tmg-data-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      .tmg-state { color: #84A98C; }
+      .tmg-note { font-size: 0.9rem; color: rgba(45,52,54,0.7); margin-top: 0.75rem; }
+    </style>
   </head>
   <body>
     <div id="tmg-nav-host"></div>
@@ -21,39 +29,54 @@
           <p class="tmg-eyebrow">The Mallory Group</p>
           <h1 class="tmg-page-title">Team</h1>
           <p class="tmg-page-desc">
-            Team-level slices and roster context for contract and movement analysis.
+            How each team's signings performed, as descriptive roster context.
           </p>
         </header>
 
         <section class="tmg-bento-grid">
-          <article class="tmg-card" role="group" aria-label="Team data status">
-            <p class="tmg-card-label">Pipeline status</p>
-            <h2 class="tmg-card-title">Team-level dataset readiness</h2>
-        <p>Team-level slices and roster summary placeholder.</p>
-        <p>Status: <span class="placeholder" id="status">Loading...</span></p>
+          <article class="tmg-card">
+            <p class="tmg-card-label">Signing outcomes by team</p>
+            <h2 class="tmg-card-title">Team rankings by mean impact change</h2>
+            <p class="tmg-note">Read this as description, not a scorecard. Teams with young, rising rosters look good because their players were due to improve. Teams built around aging stars look worse because those stars were due to decline. The ranking reflects roster age and timing more than front-office skill. Click a column to sort.</p>
+            <div id="team-table"><p class="tmg-state">Loading...</p></div>
           </article>
         </section>
 
-        <footer class="tmg-footer">TMG Tool Suite · NBA Analysis</footer>
+        <footer class="tmg-footer">TMG Tool Suite &middot; NBA Analysis</footer>
       </div>
     </main>
+
     <script>
-      const BASE = "/nba-research-project";
-      async function loadStatus() {
-        const target = document.getElementById("status");
-        try {
-          const response = await fetch(`${BASE}/assets/data/team.csv`);
-          if (response.ok) {
-            const text = await response.text();
-            if (text.trim()) {
-              target.textContent = "Loaded";
-            }
+      function splitLine(line){const out=[];let cur='';let q=false;for(let i=0;i<line.length;i++){const c=line[i];if(q){if(c==='"'){if(line[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}else{if(c===','){out.push(cur);cur='';}else if(c==='"'){q=true;}else cur+=c;}}out.push(cur);return out;}
+      function parseCSV(text){const lines=text.trim().split(/\r?\n/);const headers=splitLine(lines[0]);return lines.slice(1).map(l=>{const cells=splitLine(l);const o={};headers.forEach((h,i)=>o[h]=cells[i]);return o;});}
+      async function getCSV(path){const r=await fetch(path);if(!r.ok)throw new Error(path+' -> '+r.status);return parseCSV(await r.text());}
+      const fmt=(x,d=2)=>{const n=parseFloat(x);if(isNaN(n))return '-';return (n>=0?'+':'')+n.toFixed(d);};
+
+      (async function(){
+        const host=document.getElementById('team-table');
+        try{
+          const rows=(await getCSV('data/team_portfolio.csv')).filter(r=>r.signing_team && !isNaN(parseFloat(r.mean_mis_overall)));
+          const cols=[
+            {k:'signing_team',label:'Team',num:false},
+            {k:'n_complete',label:'Signings',num:true},
+            {k:'n_supermax',label:'Supermax',num:true},
+            {k:'mean_mis_overall',label:'Mean change',num:true,fmt:true},
+            {k:'pct_positive_mis',label:'% improved',num:true,pct:true}
+          ];
+          let sortKey='mean_mis_overall',sortDir=-1;
+          function render(){
+            rows.sort((a,b)=>{const av=parseFloat(a[sortKey]),bv=parseFloat(b[sortKey]);if(!isNaN(av)&&!isNaN(bv))return (av-bv)*sortDir;return String(a[sortKey]).localeCompare(String(b[sortKey]))*sortDir;});
+            let h='<table class="tmg-data-table"><thead><tr>';
+            cols.forEach(c=>{h+='<th class="'+(c.num?'num':'')+'" data-k="'+c.k+'">'+c.label+'</th>';});
+            h+='</tr></thead><tbody>';
+            rows.forEach(r=>{h+='<tr>';cols.forEach(c=>{let v=r[c.k];if(c.fmt)v=fmt(v);else if(c.pct)v=Math.round(parseFloat(v)*100)+'%';h+='<td class="'+(c.num?'num':'')+'">'+v+'</td>';});h+='</tr>';});
+            h+='</tbody></table>';
+            host.innerHTML=h;
+            host.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k;if(k===sortKey)sortDir*=-1;else{sortKey=k;sortDir=-1;}render();}));
           }
-        } catch (_err) {
-          // Keep placeholder text while data files are still empty/missing.
-        }
-      }
-      loadStatus();
+          render();
+        }catch(e){host.innerHTML='<p class="tmg-note">Could not load team data ('+e.message+').</p>';}
+      })();
     </script>
   </body>
 </html>

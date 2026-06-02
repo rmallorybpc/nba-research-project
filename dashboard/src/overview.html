@@ -12,6 +12,15 @@
     />
     <link rel="stylesheet" href="assets/tmg-styles.css" />
     <script defer src="assets/nav.js"></script>
+    <style>
+      .tmg-data-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.95rem; }
+      .tmg-data-table th, .tmg-data-table td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(45,52,54,0.12); }
+      .tmg-data-table th { font-weight: 500; color: #84A98C; }
+      .tmg-data-table td.num, .tmg-data-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      .tmg-result-line { font-size: 1.05rem; margin: 0.25rem 0; }
+      .tmg-state { color: #84A98C; }
+      .tmg-note { font-size: 0.9rem; color: rgba(45,52,54,0.7); margin-top: 0.75rem; }
+    </style>
   </head>
   <body>
     <div id="tmg-nav-host"></div>
@@ -21,205 +30,77 @@
           <p class="tmg-eyebrow">The Mallory Group</p>
           <h1 class="tmg-page-title">Overview</h1>
           <p class="tmg-page-desc">
-            Explore team-level Movement Impact Score rankings by season and division.
+            The headline numbers behind the findings, drawn straight from the analysis output.
           </p>
         </header>
 
-        <section class="tmg-card-wide">
-          <p class="tmg-card-label">Team movement impact score</p>
-          <h2 class="tmg-card-title">MIS rankings</h2>
-          <div class="tmg-filters" aria-label="MIS filters">
-            <div>
-              <label class="tmg-field-label" for="season-filter">Season</label>
-              <select class="tmg-select" id="season-filter">
-                <option value="all">All Seasons</option>
-                <option value="loading">Loading...</option>
-              </select>
-            </div>
+        <section class="tmg-bento-grid">
+          <article class="tmg-card">
+            <p class="tmg-card-label">Raw group means</p>
+            <h2 class="tmg-card-title">Average impact change by group</h2>
+            <p class="tmg-note">Unadjusted means. They do not account for age or prior performance. The regression below does.</p>
+            <div id="group-means"><p class="tmg-state">Loading...</p></div>
+          </article>
 
-            <div>
-              <label class="tmg-field-label" for="division-filter">Division</label>
-              <select class="tmg-select" id="division-filter">
-                <option value="all">All Divisions</option>
-                <option value="Atlantic">Atlantic</option>
-                <option value="Central">Central</option>
-                <option value="Southeast">Southeast</option>
-                <option value="Northwest">Northwest</option>
-                <option value="Pacific">Pacific</option>
-                <option value="Southwest">Southwest</option>
-              </select>
-            </div>
-        </div>
+          <article class="tmg-card">
+            <p class="tmg-card-label">The supermax test</p>
+            <h2 class="tmg-card-title">Supermax effect after controls</h2>
+            <div id="supermax-result"><p class="tmg-state">Loading...</p></div>
+          </article>
 
-          <div class="tmg-table-wrap">
-            <table class="tmg-table">
-            <thead>
-              <tr>
-                <th scope="col">Rank</th>
-                <th scope="col">Team</th>
-                <th scope="col">Division</th>
-                <th scope="col">Season</th>
-                <th scope="col">MIS</th>
-              </tr>
-            </thead>
-            <tbody id="mis-table-body">
-              <tr>
-                <td class="placeholder">Loading...</td>
-                <td class="placeholder">Loading...</td>
-                <td class="placeholder">Loading...</td>
-                <td class="placeholder">Loading...</td>
-                <td class="placeholder">Loading...</td>
-              </tr>
-            </tbody>
-            </table>
-          </div>
+          <article class="tmg-card">
+            <p class="tmg-card-label">The robust finding</p>
+            <h2 class="tmg-card-title">Mean reversion by pre-signing quartile</h2>
+            <div id="reversion"><p class="tmg-state">Loading...</p></div>
+          </article>
         </section>
 
-        <footer class="tmg-footer">TMG Tool Suite · NBA Analysis</footer>
-        </div>
+        <footer class="tmg-footer">TMG Tool Suite &middot; NBA Analysis</footer>
+      </div>
     </main>
+
     <script>
-      const BASE = "/nba-research-project";
-      const divisions = [
-        "Atlantic",
-        "Central",
-        "Southeast",
-        "Northwest",
-        "Pacific",
-        "Southwest",
-      ];
-      let misRows = [];
+      function splitLine(line){const out=[];let cur='';let q=false;for(let i=0;i<line.length;i++){const c=line[i];if(q){if(c==='"'){if(line[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}else{if(c===','){out.push(cur);cur='';}else if(c==='"'){q=true;}else cur+=c;}}out.push(cur);return out;}
+      function parseCSV(text){const lines=text.trim().split(/\r?\n/);const headers=splitLine(lines[0]);return lines.slice(1).map(l=>{const cells=splitLine(l);const o={};headers.forEach((h,i)=>o[h]=cells[i]);return o;});}
+      async function getCSV(path){const r=await fetch(path);if(!r.ok)throw new Error(path+' -> '+r.status);return parseCSV(await r.text());}
+      const TLABEL={re_signed_supermax:'Re-signed (supermax)',re_signed_standard:'Stayed (standard)',new_team:'Changed teams'};
+      const fmt=(x,d=2)=>{const n=parseFloat(x);return (n>=0?'+':'')+n.toFixed(d);};
+      const err=(el,e)=>{document.getElementById(el).innerHTML='<p class="tmg-note">Could not load data ('+e.message+').</p>';};
 
-      function escapeHtml(value) {
-        return String(value)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/\"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-      }
+      (async function(){
+        try{
+          const g=await getCSV('data/supermax_reset_groupmeans.csv');
+          const order=['re_signed_supermax','new_team','re_signed_standard'];
+          g.sort((a,b)=>order.indexOf(a.treatment_category)-order.indexOf(b.treatment_category));
+          let h='<table class="tmg-data-table"><thead><tr><th>Group</th><th class="num">n</th><th class="num">Mean impact change</th></tr></thead><tbody>';
+          g.forEach(r=>{h+='<tr><td>'+(TLABEL[r.treatment_category]||r.treatment_category)+'</td><td class="num">'+r.n+'</td><td class="num">'+fmt(r.mean_mis_overall)+'</td></tr>';});
+          h+='</tbody></table>';
+          document.getElementById('group-means').innerHTML=h;
+        }catch(e){err('group-means',e);}
 
-      function renderRows(rows) {
-        const body = document.getElementById("mis-table-body");
-        if (!body) {
-          return;
-        }
+        try{
+          const m=await getCSV('data/supermax_reset_main.csv');
+          const sm=m.find(r=>r.term==='treatment_categoryre_signed_supermax');
+          const est=parseFloat(sm.estimate),lo=parseFloat(sm['conf.low']),hi=parseFloat(sm['conf.high']),p=parseFloat(sm['p.value']);
+          const sig=p<0.05;
+          let h='<p class="tmg-result-line">Supermax coefficient: <strong>'+fmt(est)+'</strong></p>';
+          h+='<p class="tmg-result-line">95% interval: ['+fmt(lo)+', '+fmt(hi)+']</p>';
+          h+='<p class="tmg-result-line">p = '+p.toFixed(2)+'</p>';
+          h+='<p class="tmg-note">'+(sig?'Significant.':'Not significant. After controlling for age and pre-signing impact, there is no supermax penalty. The estimate even points slightly positive.')+'</p>';
+          h+='<p class="tmg-note">Only 13 players signed supermax deals in the window, so this is underpowered. There is no sign of the hypothesized decline, but a small effect cannot be ruled out.</p>';
+          document.getElementById('supermax-result').innerHTML=h;
+        }catch(e){err('supermax-result',e);}
 
-        if (!rows.length) {
-          body.innerHTML = `
-            <tr>
-              <td class="placeholder" colspan="5">No rows match the selected filters.</td>
-            </tr>
-          `;
-          return;
-        }
-
-        body.innerHTML = rows
-          .map(
-            (row) => `
-            <tr>
-              <td>${escapeHtml(row.rank || "Loading...")}</td>
-              <td>${escapeHtml(row.team || "Loading...")}</td>
-              <td>${escapeHtml(row.division || "Loading...")}</td>
-              <td>${escapeHtml(row.season || "Loading...")}</td>
-              <td>${escapeHtml(row.mis || "Loading...")}</td>
-            </tr>
-          `
-          )
-          .join("");
-      }
-
-      function applyFilters() {
-        const seasonFilter = document.getElementById("season-filter");
-        const divisionFilter = document.getElementById("division-filter");
-        if (!seasonFilter || !divisionFilter) {
-          return;
-        }
-
-        let filtered = misRows.slice();
-        if (seasonFilter.value !== "all") {
-          filtered = filtered.filter((row) => row.season === seasonFilter.value);
-        }
-        if (divisionFilter.value !== "all") {
-          filtered = filtered.filter(
-            (row) => row.division === divisionFilter.value
-          );
-        }
-
-        renderRows(filtered);
-      }
-
-      async function loadMisTable() {
-        const seasonFilter = document.getElementById("season-filter");
-        const divisionFilter = document.getElementById("division-filter");
-
-        if (seasonFilter) {
-          seasonFilter.addEventListener("change", applyFilters);
-        }
-        if (divisionFilter) {
-          divisionFilter.addEventListener("change", applyFilters);
-        }
-
-        try {
-          const response = await fetch(
-            `${BASE}/assets/data/team_mis_by_season.csv`
-          );
-          if (response.ok) {
-            const text = await response.text();
-            const lines = text
-              .split(/\r?\n/)
-              .map((line) => line.trim())
-              .filter(Boolean);
-
-            if (lines.length > 1) {
-              const headers = lines[0].split(",").map((header) => header.trim());
-              const rows = lines.slice(1).map((line) => {
-                const values = line.split(",").map((value) => value.trim());
-                const row = {};
-                headers.forEach((header, idx) => {
-                  row[header.toLowerCase()] = values[idx] || "";
-                });
-                return {
-                  rank: row.rank || "",
-                  team: row.team || row.team_name || "",
-                  division: divisions.includes(row.division)
-                    ? row.division
-                    : "",
-                  season: row.season || "",
-                  mis: row.mis || row.movement_impact_score || "",
-                };
-              });
-
-              misRows = rows;
-
-              if (seasonFilter) {
-                const seasons = [...new Set(rows.map((row) => row.season))]
-                  .filter(Boolean)
-                  .sort();
-                seasonFilter.innerHTML =
-                  '<option value="all">All Seasons</option>' +
-                  seasons
-                    .map(
-                      (season) =>
-                        `<option value="${escapeHtml(season)}">${escapeHtml(
-                          season
-                        )}</option>`
-                    )
-                    .join("");
-              }
-
-              applyFilters();
-              return;
-            }
-          }
-        } catch (_err) {
-          // Keep placeholders when CSV is not available yet.
-        }
-
-        renderRows([]);
-      }
-
-      loadMisTable();
+        try{
+          const q=await getCSV('data/reversion_by_quartile.csv');
+          q.sort((a,b)=>parseInt(a.pre_impact_quartile)-parseInt(b.pre_impact_quartile));
+          let h='<table class="tmg-data-table"><thead><tr><th>Quartile</th><th class="num">n</th><th class="num">Mean pre-impact</th><th class="num">Mean change</th><th class="num">% declined</th></tr></thead><tbody>';
+          q.forEach(r=>{h+='<tr><td>'+(r.pre_impact_quartile_label||('Q'+r.pre_impact_quartile))+'</td><td class="num">'+r.n+'</td><td class="num">'+fmt(r.mean_pre_impact_overall)+'</td><td class="num">'+fmt(r.mean_mis_overall)+'</td><td class="num">'+Math.round(parseFloat(r.pct_negative)*100)+'%</td></tr>';});
+          h+='</tbody></table>';
+          h+='<p class="tmg-note">Top-quartile players decline. Bottom-quartile players improve. This pattern, not the contract, explains the supermax decline.</p>';
+          document.getElementById('reversion').innerHTML=h;
+        }catch(e){err('reversion',e);}
+      })();
     </script>
   </body>
 </html>
