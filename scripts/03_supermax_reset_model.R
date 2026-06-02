@@ -38,8 +38,9 @@
 #
 # Notes :
 #   - Restricts to mis_data_quality == "complete" throughout.
-#   - Uses fixest::feols for clean fixed-effects output with robust SEs by
-#     default. If fixest is unavailable, falls back to lm with sandwich SEs.
+#   - Uses fixest::feols for clean fixed-effects output with standard errors
+#     clustered by player. If fixest is unavailable, falls back to lm with
+#     sandwich SEs.
 # ==============================================================================
 
 suppressPackageStartupMessages({
@@ -75,6 +76,7 @@ load_complete_events <- function(paths) {
 
   joined <- events %>%
     left_join(mis, by = "event_id", suffix = c("", ".mis")) %>%
+    mutate(player_name = dplyr::coalesce(player_name, player_name.mis)) %>%
     filter(mis_data_quality == "complete",
            !is.na(mis_overall),
            !is.na(treatment_category),
@@ -102,7 +104,7 @@ fit_model <- function(formula, data, fe_var = "contract_start_season") {
     rhs_clean <- gsub(paste0("\\+\\s*factor\\(", fe_var, "\\)"), "", rhs)
     f2 <- as.formula(paste(as.character(formula)[2], "~", rhs_clean,
                            "|", fe_var))
-    fixest::feols(f2, data = data, vcov = "hetero")
+    fixest::feols(f2, data = data, cluster = ~player_name)
   } else {
     lm(formula, data = data)
   }
@@ -114,6 +116,7 @@ tidy_model <- function(model, label) {
     n  <- nobs(model)
     r2 <- fixest::r2(model, "r2")
   } else {
+    # Standard errors are clustered by player on the fixest path.
     ct <- lmtest::coeftest(model, vcov. = sandwich::vcovHC(model, type = "HC1"))
     ts <- broom::tidy(ct, conf.int = TRUE)
     n  <- nobs(model)
@@ -192,7 +195,14 @@ run_robustness <- function(df) {
 
 print_report <- function(groups, main_tab, robust_tab) {
   message("\n--- SUPERMAX RESET MODEL ---")
-  message(sprintf("Backend: %s\n", if (USE_FIXEST) "fixest::feols" else "lm + HC1 SE"))
+  message(sprintf(
+    "Backend: %s\n",
+    if (USE_FIXEST) {
+      "fixest::feols (standard errors clustered by player)"
+    } else {
+      "lm fallback (standard errors clustered by player on fixest path)"
+    }
+  ))
 
   message("Group means (complete-data only):")
   message(sprintf("  %-22s %-6s %-12s %-12s %s",
