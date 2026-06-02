@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NBA Analysis | Key Findings</title>
+    <title>NBA Analysis | Findings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,6 +12,11 @@
     />
     <link rel="stylesheet" href="assets/tmg-styles.css" />
     <script defer src="assets/nav.js"></script>
+    <style>
+      .tmg-answer { font-size: 1.1rem; font-weight: 500; color: #2D3436; margin: 0.25rem 0 0.5rem; }
+      .tmg-note { font-size: 0.9rem; color: rgba(45,52,54,0.7); margin-top: 0.75rem; }
+      .tmg-q { margin-bottom: 1.25rem; }
+    </style>
   </head>
   <body>
     <div id="tmg-nav-host"></div>
@@ -19,61 +24,47 @@
       <div class="tmg-container">
         <header class="tmg-page-header">
           <p class="tmg-eyebrow">The Mallory Group</p>
-          <h1 class="tmg-page-title">Key Findings</h1>
+          <h1 class="tmg-page-title">Findings</h1>
           <p class="tmg-page-desc">
-            I tested whether supermax contracts hurt performance. They do not. The real story is mean reversion, plus one result I did not expect.
+            Three questions about NBA contract decisions. Three answers from the same data.
           </p>
         </header>
 
         <section class="tmg-bento-grid">
-          <article class="tmg-card" role="group" aria-label="Performance regresses to the mean">
-            <p class="tmg-card-label">Performance regresses to the mean</p>
-            <h2 class="tmg-card-title">Performance regresses to the mean</h2>
-        <p>This is the strongest result in the study. I sorted players into four groups by their impact before signing. The pattern is clean and one-directional.</p>
-        <p>The bottom group, the players coming off weak seasons, improved by +1.07 on average. Only 24 percent got worse. The top group, the players coming off the best seasons, dropped by -0.80. Seventy-one percent got worse. The two middle groups sat in between, in order.</p>
-        <p>A regression confirms it. Every point of prior impact predicts a -0.25 drop afterward. The result is about as statistically certain as results get (p below 1e-74, n=2,378).</p>
+          <article class="tmg-card tmg-q">
+            <p class="tmg-card-label">Question one</p>
+            <h2 class="tmg-card-title">Do supermax contracts make players worse?</h2>
+            <p class="tmg-answer">No. The decline is real, but the contract does not cause it.</p>
+            <p>Supermax players post the worst raw decline of any group, about -0.63 in impact on average. That looks like proof of a penalty. It is not. Supermax players are elite veterans. They are older, and they sign right after a peak season. Both facts predict a decline on their own. Control for age and prior performance, and the supermax effect is +0.48, not negative, and not statistically significant. The confidence interval spans zero in both directions. The decline was already baked in by who these players are.</p>
+            <p class="tmg-note">Only 13 players signed supermax deals in this window. The test is underpowered. There is no sign of the hypothesized penalty, but a small effect cannot be ruled out.</p>
           </article>
-          <article class="tmg-card" role="group" aria-label="The supermax penalty is a mirage">
-            <p class="tmg-card-label">The supermax penalty is a mirage</p>
-            <h2 class="tmg-card-title">The supermax penalty is a mirage</h2>
-        <p>Supermax players post the worst raw decline of any group, -0.63 on average. That looks like proof of a penalty. It is not.</p>
-        <p>Supermax players are top-group players. They are old, and they sign right after peak seasons. Both facts predict a decline on their own. Once I control for age and prior impact, the supermax effect is +0.48, not negative, and nowhere near significant (p=0.41).</p>
-        <p>So the contract adds nothing. The decline was already baked in by who these players are.</p>
-        <p>One caveat. Only 13 players signed supermax deals in this window. That is a small sample. I cannot rule out a small effect that this study is too small to detect. But there is no sign of one, and the estimate points the wrong way for the penalty story.</p>
+
+          <article class="tmg-card tmg-q">
+            <p class="tmg-card-label">Question two</p>
+            <h2 class="tmg-card-title">Does performance regress to the mean?</h2>
+            <p class="tmg-answer">Yes. Strongly, and in one direction.</p>
+            <p>Sort players into four groups by their impact before signing. The pattern is clean. The bottom group, coming off weak seasons, improved by +1.07 on average. Only 24 percent got worse. The top group, coming off the best seasons, dropped by -0.80. Seventy-one percent got worse. The two middle groups sat in between, in order. A regression confirms it. Every point of prior impact predicts a -0.25 drop afterward, about as certain as a result gets, across 2,378 events.</p>
+            <p class="tmg-note">This is the engine behind the supermax mirage. Supermax players are top-group players. They decline like every other top-group player, contract or not.</p>
           </article>
-          <article class="tmg-card" role="group" aria-label="Changing teams comes with a penalty">
-            <p class="tmg-card-label">Changing teams comes with a penalty</p>
-            <h2 class="tmg-card-title">Changing teams comes with a penalty</h2>
-        <p>Players who changed teams declined by -0.345 compared to players who stayed. That result is strong and statistically clear (p below 0.001, n=835). It runs against the fresh-start idea, which says a new situation should help.</p>
-        <p>One caution. Players do not move at random. Teams often let go of players who are already slipping. So part of this gap is probably about who gets moved, not the move itself.</p>
+
+          <article class="tmg-card tmg-q">
+            <p class="tmg-card-label">Question three</p>
+            <h2 class="tmg-card-title">Does changing teams help or hurt?</h2>
+            <p class="tmg-answer">It hurts. That runs against the fresh-start idea.</p>
+            <p>Players who changed teams declined by -0.345 in impact compared to players who stayed. The result is strong and statistically clear, across 835 events. The fresh-start effect, which opened this study, predicts the opposite. A new situation should help. In this data, it does not.</p>
+            <p class="tmg-note">One caution. Players do not move at random. Teams often let go of players who are already slipping. So part of this gap is probably about who gets moved, not the move itself.</p>
           </article>
-          <article class="tmg-card" role="group" aria-label="A note on team rankings">
-            <p class="tmg-card-label">A note on team rankings</p>
-            <h2 class="tmg-card-title">A note on team rankings</h2>
-        <p>The team-by-team page ranks franchises by how their signings performed. Read it as description, not a scorecard. Teams with young, rising rosters look good, because their players were due to improve. Franchises built around aging stars look bad, because those stars were due to decline. The ranking reflects roster age and timing more than front-office skill.</p>
+
+          <article class="tmg-card">
+            <p class="tmg-card-label">A note on the team page</p>
+            <h2 class="tmg-card-title">Read the team rankings as description</h2>
+            <p>The team page ranks franchises by how their signings performed. It is descriptive context, not a scorecard. Teams with young, rising rosters look good because their players were due to improve. Teams built around aging stars look worse because those stars were due to decline. The ranking reflects roster age and timing more than front-office skill.</p>
+            <p class="tmg-note">The full numbers are on the overview page. The sandbox page lets you explore the mean-reversion pattern yourself.</p>
           </article>
         </section>
 
-        <footer class="tmg-footer">TMG Tool Suite · NBA Analysis</footer>
+        <footer class="tmg-footer">TMG Tool Suite &middot; NBA Analysis</footer>
       </div>
     </main>
-    <script>
-      const BASE = "/nba-research-project";
-      async function loadStatus() {
-        const target = document.getElementById("status");
-        try {
-          const response = await fetch(`${BASE}/assets/data/findings.csv`);
-          if (response.ok) {
-            const text = await response.text();
-            if (text.trim()) {
-              target.textContent = "Loaded";
-            }
-          }
-        } catch (_err) {
-          // Keep placeholder text while data files are still empty/missing.
-        }
-      }
-      loadStatus();
-    </script>
   </body>
 </html>
