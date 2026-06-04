@@ -8,6 +8,7 @@ const pages = [
   { href: "team.html", label: "Team" },
   { href: "explorer.html", label: "Explorer" },
   { href: "sandbox.html", label: "Sandbox" },
+  { href: "audit.html", label: "Audit" },
 ];
 
 const toolSuiteRepos = [
