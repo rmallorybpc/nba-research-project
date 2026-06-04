@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NBA Analysis | Site Audit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/tmg-styles.css" />
+    <script defer src="assets/nav.js"></script>
+    <style>
+      .audit-controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 0.5rem 0 1rem; }
+      .audit-btn {
+        font: inherit; font-weight: 500; cursor: pointer;
+        background: #2D3436; color: #FDFCF0; border: none;
+        padding: 0.6rem 1.2rem; border-radius: 8px;
+      }
+      .audit-btn:disabled { opacity: 0.5; cursor: default; }
+      .audit-btn.secondary { background: transparent; color: #2D3436; border: 1px solid rgba(45,52,54,0.3); }
+      .audit-status { font-size: 0.9rem; color: rgba(45,52,54,0.7); }
+      .audit-summary { display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 0.5rem 0 1rem; font-weight: 500; }
+      .audit-summary span { white-space: nowrap; }
+      .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; font-weight: 500; color: #FDFCF0; }
+      .badge.pass { background: #84A98C; }
+      .badge.warn { background: #D9A441; color: #2D3436; }
+      .badge.fail { background: #C1492B; }
+      .badge.muted { background: rgba(45,52,54,0.4); }
+      table.audit-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+      table.audit-table th, table.audit-table td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid rgba(45,52,54,0.12); vertical-align: top; }
+      table.audit-table th { font-weight: 500; color: rgba(45,52,54,0.7); }
+      .cat-row td { background: rgba(132,169,140,0.12); font-weight: 500; }
+      .audit-note { font-size: 0.9rem; color: rgba(45,52,54,0.7); margin-top: 0.75rem; }
+    </style>
+  </head>
+  <body>
+    <div id="tmg-nav-host"></div>
+    <main class="tmg-page">
+      <div class="tmg-container">
+        <header class="tmg-page-header">
+          <p class="tmg-eyebrow">The Mallory Group</p>
+          <h1 class="tmg-page-title">Site audit</h1>
+          <p class="tmg-page-desc">
+            Run a live check of this site for structure, usability, and data integrity.
+          </p>
+        </header>
+
+        <section class="tmg-card">
+          <h2 class="tmg-card-title">What this checks</h2>
+          <p>
+            This audit runs in your browser when you click Run. It reads each page
+            on the site and the data files behind the charts, then reports what it
+            finds. It is deterministic. The same site produces the same result.
+          </p>
+          <p class="audit-note">
+            What it does not do: it does not use AI, and it does not judge whether
+            the research claims are factually correct. Checking facts needs human
+            or external review. This audit checks that the site is well built and
+            that the data loads, not that the conclusions are true.
+          </p>
+        </section>
+
+        <section class="tmg-card">
+          <h2 class="tmg-card-title">Run the audit</h2>
+          <div class="audit-controls">
+            <button id="run-btn" class="audit-btn">Run audit</button>
+            <button id="dl-btn" class="audit-btn secondary" disabled>Download JSON</button>
+            <span id="status" class="audit-status">Not run yet. Click Run audit.</span>
+          </div>
+          <div id="summary" class="audit-summary"></div>
+          <div id="results"></div>
+        </section>
+
+        <section class="tmg-card">
+          <h2 class="tmg-card-title">Checks performed</h2>
+          <table class="audit-table">
+            <thead><tr><th>Check</th><th>What it tests</th><th>Severity</th></tr></thead>
+            <tbody>
+              <tr><td>Page loads</td><td>Every page returns successfully</td><td>High</td></tr>
+              <tr><td>Internal links</td><td>Every in-site link points to a page that loads</td><td>High</td></tr>
+              <tr><td>Page title</td><td>Each page has a non-empty title</td><td>Low</td></tr>
+              <tr><td>Language set</td><td>The html lang attribute is present</td><td>Low</td></tr>
+              <tr><td>Mobile viewport</td><td>The viewport meta tag is present</td><td>Medium</td></tr>
+              <tr><td>One main heading</td><td>Each page has exactly one h1</td><td>Low</td></tr>
+              <tr><td>Image alt text</td><td>Images carry alt attributes</td><td>Low</td></tr>
+              <tr><td>Link text</td><td>Links have visible text or a label</td><td>Medium</td></tr>
+              <tr><td>Table headers</td><td>Data tables use header cells</td><td>Low</td></tr>
+              <tr><td>Shared styles and nav</td><td>Each page includes the shared stylesheet and nav</td><td>Low</td></tr>
+              <tr><td>Data file loads</td><td>Each findings file loads and parses</td><td>High</td></tr>
+              <tr><td>Row counts</td><td>Each data file has rows in the expected range</td><td>Medium</td></tr>
+              <tr><td>Unique event id</td><td>The signing files have no duplicate id rows</td><td>High</td></tr>
+            </tbody>
+          </table>
+          <p class="audit-note">
+            Last run: on demand, in your browser. This audit is not scheduled and
+            does not run on a server.
+          </p>
+        </section>
+
+        <footer class="tmg-footer">TMG Tool Suite &middot; NBA Analysis</footer>
+      </div>
+    </main>
+
+    <script>
+      // ---- Configuration -----------------------------------------------------
+      // Pages on the site, relative to this file.
+      var PAGES = [
+        "index.html", "research-question.html", "findings.html",
+        "overview.html", "team.html", "explorer.html", "sandbox.html",
+        "audit.html"
+      ];
+      // Data files behind the charts, with loose expected row ranges.
+      // Ranges are intentionally wide so normal variation does not false-fail.
+      var DATA_FILES = [
+        { path: "data/signing_events_classified.csv", min: 2500, max: 3400, idCheck: true },
+        { path: "data/signing_events_mis.csv",        min: 2500, max: 3400, idCheck: true },
+        { path: "data/reversion_by_quartile.csv",     min: 4,    max: 4,    idCheck: false },
+        { path: "data/supermax_reset_groupmeans.csv", min: 3,    max: 3,    idCheck: false },
+        { path: "data/team_portfolio.csv",            min: 25,   max: 35,   idCheck: false },
+        { path: "data/desc_mis_by_group.csv",         min: 3,    max: 4,    idCheck: false },
+        { path: "data/supermax_reset_main.csv",       min: 1,    max: 50,   idCheck: false }
+      ];
+
+      var fetchCache = {};
+      function fetchText(url) {
+        if (fetchCache[url]) return fetchCache[url];
+        var p = fetch(url, { cache: "no-store" }).then(function (r) {
+          return { ok: r.ok, status: r.status, text: r.ok ? r.text() : Promise.resolve("") };
+        }).then(function (o) {
+          return Promise.resolve(o.text).then(function (t) {
+            return { ok: o.ok, status: o.status, text: t };
+          });
+        }).catch(function () {
+          return { ok: false, status: 0, text: "" };
+        });
+        fetchCache[url] = p;
+        return p;
+      }
+
+      var results = [];
+      function add(category, label, status, severity, details) {
+        results.push({ category: category, label: label, status: status, severity: severity, details: details || "" });
+      }
+
+      function checkPageDom(page, doc) {
+        var t = doc.querySelector("title");
+        if (!t || !t.textContent.trim()) add("Usability", page + ": page title", "warn", "Low", "No non-empty title element.");
+
+        var lang = doc.documentElement.getAttribute("lang");
+        if (!lang) add("Usability", page + ": language set", "warn", "Low", "html lang attribute missing.");
+
+        var vp = doc.querySelector('meta[name="viewport"]');
+        if (!vp) add("Usability", page + ": mobile viewport", "warn", "Medium", "Viewport meta tag missing.");
+
+        var h1s = doc.querySelectorAll("h1");
+        if (h1s.length !== 1) add("Usability", page + ": one main heading", "warn", "Low", "Found " + h1s.length + " h1 elements, expected 1.");
+
+        var imgs = doc.querySelectorAll("img");
+        var noAlt = 0;
+        imgs.forEach(function (im) { if (!im.hasAttribute("alt")) noAlt++; });
+        if (noAlt > 0) add("Accessibility", page + ": image alt text", "warn", "Low", noAlt + " of " + imgs.length + " images missing alt.");
+
+        var links = doc.querySelectorAll("a[href]");
+        var emptyLinks = 0;
+        links.forEach(function (a) {
+          var hasText = a.textContent && a.textContent.trim().length > 0;
+          var hasLabel = a.getAttribute("aria-label");
+          if (!hasText && !hasLabel) emptyLinks++;
+        });
+        if (emptyLinks > 0) add("Accessibility", page + ": link text", "warn", "Medium", emptyLinks + " links have no text or label.");
+
+        var tables = doc.querySelectorAll("table");
+        var noHeader = 0;
+        tables.forEach(function (tb) { if (tb.querySelectorAll("th").length === 0) noHeader++; });
+        if (noHeader > 0) add("Usability", page + ": table headers", "warn", "Low", noHeader + " tables have no header cells.");
+
+        var css = doc.querySelector('link[href*="tmg-styles.css"]');
+        if (!css) add("Consistency", page + ": shared styles", "warn", "Low", "Shared stylesheet not linked.");
+        var navHost = doc.querySelector("#tmg-nav-host");
+        if (!navHost) add("Consistency", page + ": shared nav", "warn", "Low", "Nav host element missing.");
+
+        return links;
+      }
+
+      function gatherInternalLinks(doc, into) {
+        var links = doc.querySelectorAll("a[href]");
+        links.forEach(function (a) {
+          var href = a.getAttribute("href") || "";
+          if (/^https?:/i.test(href) || href.indexOf("mailto:") === 0) return;
+          if (href.charAt(0) === "#" || href.trim() === "") return;
+          var clean = href.split("#")[0].split("?")[0];
+          if (/\.html$/i.test(clean)) into[clean] = true;
+        });
+      }
+
+      function parseCsvRows(text) {
+        var lines = text.split(/\r?\n/).filter(function (l) { return l.trim().length > 0; });
+        return lines;
+      }
+
+      function runAudit() {
+        results = [];
+        var runBtn = document.getElementById("run-btn");
+        var dlBtn = document.getElementById("dl-btn");
+        var statusEl = document.getElementById("status");
+        var summaryEl = document.getElementById("summary");
+        var resultsEl = document.getElementById("results");
+        runBtn.disabled = true; dlBtn.disabled = true;
+        statusEl.textContent = "Running checks...";
+        summaryEl.innerHTML = ""; resultsEl.innerHTML = "";
+        fetchCache = {};
+
+        var parser = new DOMParser();
+        var internalLinks = {};
+        var docs = {};
+
+        var pageJobs = PAGES.map(function (page) {
+          return fetchText(page).then(function (res) {
+            if (!res.ok) {
+              add("Structure", page + ": page loads", "fail", "High", "Returned status " + res.status + ".");
+              return;
+            }
+            add("Structure", page + ": page loads", "pass", "High", "Loaded.");
+            var doc = parser.parseFromString(res.text, "text/html");
+            docs[page] = doc;
+            checkPageDom(page, doc);
+            gatherInternalLinks(doc, internalLinks);
+          });
+        });
+
+        Promise.all(pageJobs).then(function () {
+          // Internal link integrity for any link not already in PAGES.
+          var linkTargets = Object.keys(internalLinks);
+          var linkJobs = linkTargets.map(function (target) {
+            if (PAGES.indexOf(target) !== -1) return Promise.resolve();
+            return fetchText(target).then(function (res) {
+              if (!res.ok) add("Structure", "Internal link: " + target, "fail", "High", "Link target returned status " + res.status + ".");
+              else add("Structure", "Internal link: " + target, "pass", "High", "Resolves.");
+            });
+          });
+          return Promise.all(linkJobs);
+        }).then(function () {
+          // Data files.
+          var dataJobs = DATA_FILES.map(function (f) {
+            return fetchText(f.path).then(function (res) {
+              if (!res.ok) {
+                add("Data", f.path + ": loads", "fail", "High", "Returned status " + res.status + ".");
+                return;
+              }
+              var lines = parseCsvRows(res.text);
+              if (lines.length < 2) {
+                add("Data", f.path + ": loads", "fail", "High", "No data rows found.");
+                return;
+              }
+              add("Data", f.path + ": loads", "pass", "High", "Parsed " + (lines.length - 1) + " rows.");
+              var rows = lines.length - 1;
+              if (rows < f.min || rows > f.max) {
+                add("Data", f.path + ": row count", "warn", "Medium", "Found " + rows + " rows, expected " + f.min + " to " + f.max + ".");
+              } else {
+                add("Data", f.path + ": row count", "pass", "Medium", rows + " rows, within range.");
+              }
+              if (f.idCheck) {
+                var seen = {}; var dups = 0;
+                for (var i = 1; i < lines.length; i++) {
+                  var id = lines[i].split(",")[0];
+                  if (seen[id]) dups++; else seen[id] = true;
+                }
+                if (dups > 0) add("Data", f.path + ": unique id", "fail", "High", dups + " duplicate id rows.");
+                else add("Data", f.path + ": unique id", "pass", "High", "No duplicate ids.");
+              }
+            });
+          });
+          return Promise.all(dataJobs);
+        }).then(function () {
+          render();
+          var counts = tally();
+          statusEl.textContent = "Done. " + results.length + " checks run.";
+          runBtn.disabled = false; dlBtn.disabled = false;
+        }).catch(function (e) {
+          statusEl.textContent = "Audit error: " + e;
+          runBtn.disabled = false;
+        });
+      }
+
+      function tally() {
+        var c = { pass: 0, warn: 0, fail: 0 };
+        results.forEach(function (r) { c[r.status] = (c[r.status] || 0) + 1; });
+        return c;
+      }
+
+      function badge(status) {
+        var label = status === "pass" ? "Pass" : status === "warn" ? "Warn" : "Fail";
+        return '<span class="badge ' + status + '">' + label + "</span>";
+      }
+
+      function render() {
+        var c = tally();
+        var summaryEl = document.getElementById("summary");
+        summaryEl.innerHTML =
+          '<span>' + badge("pass") + " " + c.pass + " passed</span>" +
+          '<span>' + badge("warn") + " " + c.warn + " warnings</span>" +
+          '<span>' + badge("fail") + " " + c.fail + " failed</span>";
+
+        var cats = {};
+        results.forEach(function (r) { (cats[r.category] = cats[r.category] || []).push(r); });
+
+        var order = ["Structure", "Data", "Usability", "Accessibility", "Consistency"];
+        var catNames = Object.keys(cats).sort(function (a, b) {
+          var ia = order.indexOf(a), ib = order.indexOf(b);
+          return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        });
+
+        var html = '<table class="audit-table"><thead><tr><th>Check</th><th>Result</th><th>Severity</th><th>Details</th></tr></thead><tbody>';
+        catNames.forEach(function (cat) {
+          html += '<tr class="cat-row"><td colspan="4">' + cat + "</td></tr>";
+          // Sort within category: fail, then warn, then pass.
+          var rank = { fail: 0, warn: 1, pass: 2 };
+          cats[cat].sort(function (a, b) { return rank[a.status] - rank[b.status]; });
+          cats[cat].forEach(function (r) {
+            html += "<tr><td>" + escapeHtml(r.label) + "</td><td>" + badge(r.status) +
+              "</td><td>" + r.severity + "</td><td>" + escapeHtml(r.details) + "</td></tr>";
+          });
+        });
+        html += "</tbody></table>";
+        document.getElementById("results").innerHTML = html;
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"]/g, function (ch) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch];
+        });
+      }
+
+      function downloadJson() {
+        var payload = {
+          timestamp: new Date().toISOString(),
+          summary: tally(),
+          checks: results
+        };
+        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url; a.download = "nba-audit-results.json";
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+      }
+
+      document.getElementById("run-btn").addEventListener("click", runAudit);
+      document.getElementById("dl-btn").addEventListener("click", downloadJson);
+    </script>
+  </body>
+</html>
