@@ -82,6 +82,7 @@ so the pages can read them.
 Roadmap: roadmap.md
 - NBA awards reference: dashboard/docs/nba-awards-reference.md
 - CBA thresholds reference: docs/docs-file.md
+- Site audit: open the audit page on the live site and click Run audit.
 
 The awards and CBA-threshold references support a retired contract-tier
 classifier. That approach left the launch when the contract source proved
@@ -92,6 +93,16 @@ and tiers. They are not part of the current analysis.
 
 Version 1 is complete. The pipeline runs end to end and the site reports the
 findings. Open items are tracked in roadmap.md. None block the launch.
+
+## Auditing the site
+
+The site has a built-in audit page. Open it and click Run audit. It checks the
+pages and the data files in your browser and reports what it finds. It covers
+page loads, internal links, usability, accessibility, and data integrity. It is
+deterministic and runs on demand. It does not use AI, and it does not judge
+whether the research claims are correct. That part needs human review.
+
+Live audit: https://rmallorybpc.github.io/nba-research-project/audit.html
 
 ## A note on what this is not
 
