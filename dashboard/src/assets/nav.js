@@ -29,12 +29,24 @@ const toolSuiteRepos = [
     label: "NFL Analysis",
   },
   {
-    href: "https://rmallorybpc.github.io/nhl-free-agency-research/",
-    label: "NHL Analysis",
-  },
-  {
     href: "https://rmallorybpc.github.io/recipes/",
     label: "Recipe Book",
+  },
+  {
+    href: "https://rmallorybpc.github.io/nhl-free-agency-research/",
+    label: "NHL Free Agency Research",
+  },
+  {
+    href: "https://rmallorybpc.github.io/nhl-play-for-contract/",
+    label: "NHL Play for Contract",
+  },
+  {
+    href: "https://content-integrity-audit.pages.dev/",
+    label: "Content Integrity",
+  },
+  {
+    href: "https://rmallorybpc.github.io/nba-research-project/",
+    label: "NBA Supermax Research",
   },
 ];
 
